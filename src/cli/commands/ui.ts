@@ -884,12 +884,57 @@ export function uiCommand(program: Command): void {
 
             appendEventToFile(event, targetFile);
 
+            // Check if this was a verification issue and auto-close target if all verifications done
+            let autoClosed: { id: string; title: string } | undefined;
+            if (issue.verifies) {
+              let targetIssue: Issue | undefined;
+              let targetVerifications: Issue[] = [];
+
+              if (isMultiWorktree()) {
+                const found = findIssueInSources(issue.verifies, issueFiles);
+                if (found) {
+                  targetIssue = found.issue;
+                  const allIssues = mergeIssuesFromFiles(issueFiles);
+                  targetVerifications = allIssues.filter(
+                    i => i.verifies === issue.verifies && i.status !== 'closed'
+                  );
+                }
+              } else {
+                targetIssue = getIssue(issue.verifies);
+                targetVerifications = getVerifications(issue.verifies).filter(v => v.status !== 'closed');
+              }
+
+              if (targetIssue && targetIssue.status === 'pending_verification' && targetVerifications.length === 0) {
+                // All verifications closed - auto-close the target
+                const autoCloseEvent: CloseEvent = {
+                  type: 'close',
+                  issueId: issue.verifies,
+                  timestamp: new Date().toISOString(),
+                  data: { reason: 'All verifications completed' },
+                };
+
+                if (isMultiWorktree()) {
+                  const targetFound = findIssueInSources(issue.verifies, issueFiles);
+                  if (targetFound) {
+                    appendEventToFile(autoCloseEvent, targetFound.targetFile);
+                  }
+                } else {
+                  const pebbleDir = getOrCreatePebbleDir();
+                  appendEventToFile(autoCloseEvent, path.join(pebbleDir, 'issues.jsonl'));
+                }
+
+                autoClosed = { id: targetIssue.id, title: targetIssue.title };
+              }
+            }
+
             // Return updated issue
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
-              res.json(updated?.issue || { ...issue, status: 'closed', updatedAt: timestamp });
+              const result = updated?.issue || { ...issue, status: 'closed', updatedAt: timestamp };
+              res.json(autoClosed ? { ...result, _autoClosed: autoClosed } : result);
             } else {
-              res.json(getIssue(issueId));
+              const result = getIssue(issueId);
+              res.json(autoClosed ? { ...result, _autoClosed: autoClosed } : result);
             }
           } catch (error) {
             res.status(500).json({ error: (error as Error).message });

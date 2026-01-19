@@ -30,6 +30,7 @@ export function closeCommand(program: Command): void {
           status?: 'closed' | 'pending_verification';
           pendingVerifications?: Array<{ id: string; title: string }>;
           unblocked?: Array<{ id: string; title: string }>;
+          autoClosed?: { id: string; title: string };
         }> = [];
 
         for (const id of allIds) {
@@ -108,11 +109,38 @@ export function closeCommand(program: Command): void {
 
             // Get issues that became unblocked
             const unblocked = getNewlyUnblocked(resolvedId);
+
+            // Check if this was a verification issue and auto-close target if all verifications done
+            let autoClosed: { id: string; title: string } | undefined;
+            if (issue.verifies) {
+              const targetIssue = getIssue(issue.verifies);
+              if (targetIssue && targetIssue.status === 'pending_verification') {
+                // Re-fetch verifications to get updated state
+                const remainingVerifications = getVerifications(issue.verifies)
+                  .filter(v => v.status !== 'closed');
+
+                if (remainingVerifications.length === 0) {
+                  // All verifications closed - auto-close the target
+                  const autoCloseEvent: CloseEvent = {
+                    type: 'close',
+                    issueId: issue.verifies,
+                    timestamp: new Date().toISOString(),
+                    data: {
+                      reason: 'All verifications completed',
+                    },
+                  };
+                  appendEvent(autoCloseEvent, pebbleDir);
+                  autoClosed = { id: targetIssue.id, title: targetIssue.title };
+                }
+              }
+            }
+
             results.push({
               id: resolvedId,
               success: true,
               status: 'closed',
               unblocked: unblocked.length > 0 ? unblocked.map(i => ({ id: i.id, title: i.title })) : undefined,
+              autoClosed,
             });
           } catch (error) {
             results.push({ id, success: false, error: (error as Error).message });
@@ -140,6 +168,9 @@ export function closeCommand(program: Command): void {
                     console.log(`  → ${u.id} - ${u.title}`);
                   }
                 }
+                if (result.autoClosed) {
+                  console.log(`\n✓ ${result.autoClosed.id} auto-closed (all verifications complete)`);
+                }
               }
             } else {
               console.log(formatJson({
@@ -149,6 +180,7 @@ export function closeCommand(program: Command): void {
                 ...(result.pendingVerifications && { pendingVerifications: result.pendingVerifications }),
                 ...(result.pendingVerifications && { hint: `pb verifications ${result.id}` }),
                 ...(result.unblocked && { unblocked: result.unblocked }),
+                ...(result.autoClosed && { autoClosed: result.autoClosed }),
               }));
             }
           } else {
@@ -172,6 +204,9 @@ export function closeCommand(program: Command): void {
                       console.log(`  → ${u.id} - ${u.title}`);
                     }
                   }
+                  if (result.autoClosed) {
+                    console.log(`  ✓ ${result.autoClosed.id} auto-closed (all verifications complete)`);
+                  }
                 }
               } else {
                 console.log(`✗ ${result.id}: ${result.error}`);
@@ -186,6 +221,7 @@ export function closeCommand(program: Command): void {
               ...(r.pendingVerifications && { pendingVerifications: r.pendingVerifications }),
               ...(r.pendingVerifications && { hint: `pb verifications ${r.id}` }),
               ...(r.unblocked && { unblocked: r.unblocked }),
+              ...(r.autoClosed && { autoClosed: r.autoClosed }),
             }))));
           }
         }

@@ -321,21 +321,29 @@ export function IssueDetail({
           duration: 5000,
         });
       } else {
-        toast('Issue closed', {
-          duration: 5000,
-          action: {
-            label: 'Undo',
-            onClick: async () => {
-              try {
-                await reopenIssue(issue.id);
-                toast.success('Issue reopened');
-                onRefresh?.();
-              } catch {
-                toast.error('Failed to undo');
-              }
+        // Check if this closure auto-closed a target issue
+        const autoClosed = (result as { _autoClosed?: { id: string; title: string } })._autoClosed;
+        if (autoClosed) {
+          toast.success(`Issue closed. ${autoClosed.id} auto-closed (all verifications complete)`, {
+            duration: 5000,
+          });
+        } else {
+          toast('Issue closed', {
+            duration: 5000,
+            action: {
+              label: 'Undo',
+              onClick: async () => {
+                try {
+                  await reopenIssue(issue.id);
+                  toast.success('Issue reopened');
+                  onRefresh?.();
+                } catch {
+                  toast.error('Failed to undo');
+                }
+              },
             },
-          },
-        });
+          });
+        }
       }
       onRefresh?.();
     } catch (err) {
