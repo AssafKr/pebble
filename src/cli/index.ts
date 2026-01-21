@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { createCommand } from './commands/create.js';
 import { updateCommand } from './commands/update.js';
 import { closeCommand } from './commands/close.js';
@@ -22,12 +25,17 @@ import { searchCommand } from './commands/search.js';
 import { verificationsCommand } from './commands/verifications.js';
 import { initCommand } from './commands/init.js';
 
+// Read version from package.json
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8'));
+
 const program = new Command();
 
 program
   .name('pebble')
   .description('A lightweight JSONL-based issue tracker')
-  .version('0.1.0');
+  .version(packageJson.version);
 
 // Global options
 program.option('-P, --pretty', 'Human-readable output (default: JSON)');
