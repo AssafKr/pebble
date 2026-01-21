@@ -58,10 +58,27 @@ function resolveWorktreePebbleDir(localPebbleDir: string): string {
 
 /**
  * Search upward from cwd to find .pebble/ directory.
- * If in a git worktree, may redirect to main tree's .pebble based on config.
+ * If in a git worktree, checks main tree first (unless --local flag is set).
  * Returns the path to .pebble/ or null if not found.
  */
 export function discoverPebbleDir(startDir: string = process.cwd()): string | null {
+  // If in a worktree and --local not set, check main tree first
+  // This handles the case where worktree is a sibling (not child) of main tree
+  if (process.env.PEBBLE_LOCAL !== '1') {
+    const mainRoot = getMainWorktreeRoot();
+    if (mainRoot) {
+      const mainPebble = path.join(mainRoot, PEBBLE_DIR);
+      if (fs.existsSync(mainPebble) && fs.statSync(mainPebble).isDirectory()) {
+        // Check config to see if worktree redirection is disabled
+        const config = getConfigSafe(mainPebble);
+        if (config?.useMainTreePebble !== false) {
+          return mainPebble;
+        }
+      }
+    }
+  }
+
+  // Fall back to upward search from cwd
   let currentDir = path.resolve(startDir);
   const root = path.parse(currentDir).root;
 
