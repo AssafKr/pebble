@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { Issue } from '../../shared/types';
 import { ChevronRight, Home } from 'lucide-react';
 
-type View = 'list' | 'dashboard' | 'history';
+type View = 'list' | 'dashboard' | 'history' | 'comments';
 
 interface BreadcrumbsProps {
   view: View;
@@ -31,6 +31,7 @@ export function Breadcrumbs({
     list: 'List',
     dashboard: 'Dashboard',
     history: 'History',
+    comments: 'Comments',
   };
 
   crumbs.push({

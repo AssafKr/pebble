@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import type { IssueType, Priority, Status, IssueFilters } from '../../shared/types.js';
 import { ISSUE_TYPES, PRIORITIES, STATUSES, STATUS_LABELS } from '../../shared/types.js';
 import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getIssues, resolveId, getBlocking, getChildren, getVerifications, getIssue } from '../lib/state.js';
+import { getIssues, resolveId, getBlocking, getChildren, getVerifications, getComputedState, getAncestryChain } from '../lib/state.js';
 import { outputIssueList, outputIssueListVerbose, outputIssueTree, outputError, type VerboseIssueInfo, type LimitInfo } from '../lib/output.js';
 
 export function listCommand(program: Command): void {
@@ -73,24 +73,18 @@ export function listCommand(program: Command): void {
 
         // Verbose output: flat list with expanded details
         if (options.verbose) {
+          // Get computed state once for efficient ancestry lookups
+          const state = getComputedState();
+
           // Build verbose info for each issue
           const verboseIssues: VerboseIssueInfo[] = issues.map((issue) => {
-            const info: VerboseIssueInfo = {
+            return {
               issue,
               blocking: getBlocking(issue.id).map((i) => i.id),
               children: getChildren(issue.id).length,
               verifications: getVerifications(issue.id).length,
+              ancestry: getAncestryChain(issue.id, state),
             };
-
-            // Add parent info if available
-            if (issue.parent) {
-              const parentIssue = getIssue(issue.parent);
-              if (parentIssue) {
-                info.parent = { id: parentIssue.id, title: parentIssue.title };
-              }
-            }
-
-            return info;
           });
 
           // Determine section header based on filters

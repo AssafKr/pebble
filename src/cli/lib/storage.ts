@@ -2,14 +2,64 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { IssueEvent, PebbleConfig } from '../../shared/types.js';
 import { derivePrefix } from './id.js';
+import { getMainWorktreeRoot } from './git.js';
 
 const PEBBLE_DIR = '.pebble';
 const ISSUES_FILE = 'issues.jsonl';
 const CONFIG_FILE = 'config.json';
 
 /**
- * Search upward from cwd to find .pebble/ directory
- * Returns the path to .pebble/ or null if not found
+ * Safely read config without throwing errors.
+ * Returns null if config can't be read.
+ */
+function getConfigSafe(pebbleDir: string): PebbleConfig | null {
+  try {
+    const configPath = path.join(pebbleDir, CONFIG_FILE);
+    if (!fs.existsSync(configPath)) {
+      return null;
+    }
+    const content = fs.readFileSync(configPath, 'utf-8');
+    return JSON.parse(content) as PebbleConfig;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve a local pebble directory to the main tree's pebble directory
+ * if we're in a worktree and the config allows it.
+ */
+function resolveWorktreePebbleDir(localPebbleDir: string): string {
+  // Check if --local flag is set (via environment variable)
+  if (process.env.PEBBLE_LOCAL === '1') {
+    return localPebbleDir;
+  }
+
+  // Check config for useMainTreePebble setting
+  const config = getConfigSafe(localPebbleDir);
+  if (config?.useMainTreePebble === false) {
+    return localPebbleDir; // Explicitly disabled
+  }
+
+  // Default behavior: check if we're in a worktree
+  const mainRoot = getMainWorktreeRoot();
+  if (!mainRoot) {
+    return localPebbleDir; // Not in a worktree
+  }
+
+  // Check if main tree has .pebble
+  const mainPebble = path.join(mainRoot, PEBBLE_DIR);
+  if (fs.existsSync(mainPebble) && fs.statSync(mainPebble).isDirectory()) {
+    return mainPebble;
+  }
+
+  return localPebbleDir; // Fallback to local
+}
+
+/**
+ * Search upward from cwd to find .pebble/ directory.
+ * If in a git worktree, may redirect to main tree's .pebble based on config.
+ * Returns the path to .pebble/ or null if not found.
  */
 export function discoverPebbleDir(startDir: string = process.cwd()): string | null {
   let currentDir = path.resolve(startDir);
@@ -18,7 +68,7 @@ export function discoverPebbleDir(startDir: string = process.cwd()): string | nu
   while (currentDir !== root) {
     const pebbleDir = path.join(currentDir, PEBBLE_DIR);
     if (fs.existsSync(pebbleDir) && fs.statSync(pebbleDir).isDirectory()) {
-      return pebbleDir;
+      return resolveWorktreePebbleDir(pebbleDir);
     }
     currentDir = path.dirname(currentDir);
   }
@@ -26,7 +76,7 @@ export function discoverPebbleDir(startDir: string = process.cwd()): string | nu
   // Check root as well
   const rootPebble = path.join(root, PEBBLE_DIR);
   if (fs.existsSync(rootPebble) && fs.statSync(rootPebble).isDirectory()) {
-    return rootPebble;
+    return resolveWorktreePebbleDir(rootPebble);
   }
 
   return null;
@@ -44,20 +94,38 @@ export function getPebbleDir(): string {
 }
 
 /**
- * Create .pebble/ directory with config if it doesn't exist
+ * Create .pebble/ directory with config if it doesn't exist.
+ * In a git worktree, creates in the main tree root (unless --local is set).
  * Returns the path to .pebble/
  */
 export function ensurePebbleDir(baseDir: string = process.cwd()): string {
-  const pebbleDir = path.join(baseDir, PEBBLE_DIR);
+  // Check if --local flag is NOT set and we're in a worktree
+  // In that case, create in main tree instead of worktree
+  let targetDir = baseDir;
+  if (process.env.PEBBLE_LOCAL !== '1') {
+    const mainRoot = getMainWorktreeRoot();
+    if (mainRoot) {
+      // Check if main tree already has .pebble
+      const mainPebble = path.join(mainRoot, PEBBLE_DIR);
+      if (fs.existsSync(mainPebble) && fs.statSync(mainPebble).isDirectory()) {
+        return mainPebble; // Use existing main tree .pebble
+      }
+      // Create in main tree
+      targetDir = mainRoot;
+    }
+  }
+
+  const pebbleDir = path.join(targetDir, PEBBLE_DIR);
 
   if (!fs.existsSync(pebbleDir)) {
     fs.mkdirSync(pebbleDir, { recursive: true });
 
-    // Create initial config
-    const folderName = path.basename(baseDir);
+    // Create initial config with worktree support enabled by default
+    const folderName = path.basename(targetDir);
     const config: PebbleConfig = {
       prefix: derivePrefix(folderName),
       version: '0.1.0',
+      useMainTreePebble: true,
     };
     setConfig(config, pebbleDir);
 

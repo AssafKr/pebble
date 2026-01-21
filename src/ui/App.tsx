@@ -7,6 +7,7 @@ import { IssueList, type FilterPreset } from './components/IssueList';
 import { IssueDetail } from './components/IssueDetail';
 import type { SortingState, ColumnFiltersState, ExpandedState } from '@tanstack/react-table';
 import { HistoryView } from './components/HistoryView';
+import { CommentsView } from './components/CommentsView';
 import { Dashboard } from './components/Dashboard';
 import { Breadcrumbs } from './components/Breadcrumbs';
 import { CreateIssueForm } from './components/CreateIssueForm';
@@ -16,9 +17,9 @@ import { SourceManager } from './components/SourceManager';
 import { Button } from './components/ui/button';
 import type { Issue } from '../shared/types';
 import { fetchSources, type SourcesResponse } from './lib/api';
-import { List, History, LayoutDashboard, RefreshCw, Loader2, Plus, FolderSync } from 'lucide-react';
+import { List, History, LayoutDashboard, RefreshCw, Loader2, Plus, FolderSync, MessageSquare } from 'lucide-react';
 
-type View = 'list' | 'dashboard' | 'history';
+type View = 'list' | 'dashboard' | 'history' | 'comments';
 
 function AppContent() {
   const { resolvedTheme } = useTheme();
@@ -54,6 +55,9 @@ function AppContent() {
   const [historySearchFilter, setHistorySearchFilter] = useState('');
   const [historyTypeFilter, setHistoryTypeFilter] = useState('');
   const [historyIssueFilter, setHistoryIssueFilter] = useState('');
+
+  // Lifted CommentsView filter state (persists across tab switches)
+  const [commentsSearchFilter, setCommentsSearchFilter] = useState('');
 
   // Get all epics for the create form parent selector
   const epics = useMemo(() => issues.filter((i) => i.type === 'epic'), [issues]);
@@ -219,10 +223,19 @@ function AppContent() {
                 variant={view === 'history' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => handleViewChange('history')}
-                className="rounded-l-none"
+                className="rounded-none border-r"
               >
                 <History className="h-4 w-4 mr-1" />
                 History
+              </Button>
+              <Button
+                variant={view === 'comments' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handleViewChange('comments')}
+                className="rounded-l-none"
+              >
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Comments
               </Button>
             </div>
 
@@ -326,6 +339,15 @@ function AppContent() {
                 onTypeFilterChange={setHistoryTypeFilter}
                 issueFilter={historyIssueFilter}
                 onIssueFilterChange={setHistoryIssueFilter}
+              />
+            )}
+            {view === 'comments' && (
+              <CommentsView
+                events={events}
+                issues={issues}
+                onSelectIssue={handleSelectIssue}
+                searchFilter={commentsSearchFilter}
+                onSearchFilterChange={setCommentsSearchFilter}
               />
             )}
           </>

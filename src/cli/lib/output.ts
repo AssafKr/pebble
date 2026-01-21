@@ -163,6 +163,7 @@ export interface IssueDetailContext {
   children: Issue[];
   verifications: Issue[];
   related: Issue[];
+  ancestry?: Array<{ id: string; title: string }>; // Full parent chain
 }
 
 /**
@@ -177,7 +178,11 @@ export function formatIssueDetailPretty(issue: Issue, ctx: IssueDetailContext): 
   lines.push(`Priority: ${formatPriority(issue.priority)}`);
   lines.push(`Status:   ${formatStatus(issue.status)}`);
 
-  if (issue.parent) {
+  // Show ancestry chain if available
+  if (ctx.ancestry && ctx.ancestry.length > 0) {
+    const chain = [...ctx.ancestry].reverse().map(a => a.id).join(' > ');
+    lines.push(`Ancestry: ${chain}`);
+  } else if (issue.parent) {
     lines.push(`Parent:   ${issue.parent}`);
   }
 
@@ -264,6 +269,7 @@ export function outputIssueDetail(issue: Issue, ctx: IssueDetailContext, pretty:
       children: ctx.children.map(i => ({ id: i.id, title: i.title, status: i.status })),
       verifications: ctx.verifications.map(i => ({ id: i.id, title: i.title, status: i.status })),
       related: ctx.related.map(i => i.id),
+      ...(ctx.ancestry && ctx.ancestry.length > 0 && { ancestry: ctx.ancestry }),
     };
     console.log(formatJson(output));
   }
@@ -614,7 +620,7 @@ export interface VerboseIssueInfo {
   children: number;
   verifications: number;
   blockers?: string[]; // For blocked command: open blockers
-  parent?: { id: string; title: string }; // Parent epic info
+  ancestry: Array<{ id: string; title: string }>; // Full parent chain (parent → grandparent → root)
 }
 
 /**
@@ -634,14 +640,15 @@ export function formatIssueListVerbose(issues: VerboseIssueInfo[], sectionHeader
   }
 
   for (const info of issues) {
-    const { issue, blocking, children, verifications, blockers, parent } = info;
+    const { issue, blocking, children, verifications, blockers, ancestry } = info;
 
     lines.push(`${issue.id}: ${issue.title}`);
     lines.push(`  Type: ${formatType(issue.type)} | Priority: P${issue.priority} | Created: ${formatRelativeTime(issue.createdAt)}`);
 
-    // Show parent epic if available
-    if (parent) {
-      lines.push(`  Epic: ${parent.id} (${parent.title})`);
+    // Show ancestry chain if available (reversed: root > ... > parent)
+    if (ancestry.length > 0) {
+      const chain = [...ancestry].reverse().map(a => a.id).join(' > ');
+      lines.push(`  Ancestry: ${chain}`);
     }
 
     // Show blocking/blockers if relevant
@@ -674,13 +681,13 @@ export function outputIssueListVerbose(issues: VerboseIssueInfo[], pretty: boole
     }
   } else {
     // JSON output includes all fields
-    const output = issues.map(({ issue, blocking, children, verifications, blockers, parent }) => ({
+    const output = issues.map(({ issue, blocking, children, verifications, blockers, ancestry }) => ({
       ...issue,
       blocking,
       childrenCount: issue.type === 'epic' ? children : undefined,
       verificationsCount: verifications,
       ...(blockers && { openBlockers: blockers }),
-      ...(parent && { parentInfo: parent }),
+      ...(ancestry.length > 0 && { ancestry }),
     }));
     // Only include _meta when results are actually limited
     if (limitInfo?.limited) {

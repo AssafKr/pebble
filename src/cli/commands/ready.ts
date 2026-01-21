@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { ISSUE_TYPES, type IssueType } from '../../shared/types.js';
 import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getReady, getBlocking, getChildren, getVerifications, getIssue } from '../lib/state.js';
+import { getReady, getBlocking, getChildren, getVerifications, getComputedState, getAncestryChain } from '../lib/state.js';
 import { outputIssueList, outputIssueListVerbose, outputError, type VerboseIssueInfo, type LimitInfo } from '../lib/output.js';
 
 export function readyCommand(program: Command): void {
@@ -46,24 +46,18 @@ export function readyCommand(program: Command): void {
         };
 
         if (options.verbose) {
+          // Get computed state once for efficient ancestry lookups
+          const state = getComputedState();
+
           // Build verbose info for each issue
           const verboseIssues: VerboseIssueInfo[] = issues.map((issue) => {
-            const info: VerboseIssueInfo = {
+            return {
               issue,
               blocking: getBlocking(issue.id).map((i) => i.id),
               children: getChildren(issue.id).length,
               verifications: getVerifications(issue.id).length,
+              ancestry: getAncestryChain(issue.id, state),
             };
-
-            // Add parent info if available
-            if (issue.parent) {
-              const parentIssue = getIssue(issue.parent);
-              if (parentIssue) {
-                info.parent = { id: parentIssue.id, title: parentIssue.title };
-              }
-            }
-
-            return info;
           });
           outputIssueListVerbose(verboseIssues, pretty, 'Ready Issues', limitInfo);
         } else {

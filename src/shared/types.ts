@@ -108,6 +108,7 @@ export type IssueEvent =
 export interface PebbleConfig {
   prefix: string;
   version: string;
+  useMainTreePebble?: boolean; // default: true - use main tree's .pebble when in a git worktree
 }
 
 // Helper type for issue filters

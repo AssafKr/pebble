@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getBlocked, getBlocking, getChildren, getVerifications, getBlockers, getIssue } from '../lib/state.js';
+import { getBlocked, getBlocking, getChildren, getVerifications, getBlockers, getComputedState, getAncestryChain } from '../lib/state.js';
 import { outputIssueList, outputIssueListVerbose, outputError, type VerboseIssueInfo, type LimitInfo } from '../lib/output.js';
 
 export function blockedCommand(program: Command): void {
@@ -35,6 +35,9 @@ export function blockedCommand(program: Command): void {
         };
 
         if (options.verbose) {
+          // Get computed state once for efficient ancestry lookups
+          const state = getComputedState();
+
           // Build verbose info for each issue, including open blockers
           const verboseIssues: VerboseIssueInfo[] = issues.map((issue) => {
             // Get open blockers (issues blocking this one that aren't closed)
@@ -43,23 +46,14 @@ export function blockedCommand(program: Command): void {
               .filter((b) => b.status !== 'closed')
               .map((b) => b.id);
 
-            const info: VerboseIssueInfo = {
+            return {
               issue,
               blocking: getBlocking(issue.id).map((i) => i.id),
               children: getChildren(issue.id).length,
               verifications: getVerifications(issue.id).length,
               blockers: openBlockers,
+              ancestry: getAncestryChain(issue.id, state),
             };
-
-            // Add parent info if available
-            if (issue.parent) {
-              const parentIssue = getIssue(issue.parent);
-              if (parentIssue) {
-                info.parent = { id: parentIssue.id, title: parentIssue.title };
-              }
-            }
-
-            return info;
           });
           outputIssueListVerbose(verboseIssues, pretty, 'Blocked Issues', limitInfo);
         } else {

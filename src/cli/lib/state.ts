@@ -482,3 +482,33 @@ export function getOpenBlockers(issueId: string): Issue[] {
     .map((id) => state.get(id))
     .filter((i): i is Issue => i !== undefined && i.status !== 'closed');
 }
+
+/**
+ * Get the computed state map for efficient lookups
+ * Use this when you need to perform multiple lookups to avoid recomputing state
+ */
+export function getComputedState(): Map<string, Issue> {
+  const events = readEvents();
+  return computeState(events);
+}
+
+/**
+ * Get the ancestry chain for an issue (parent → grandparent → great-grandparent...)
+ * Returns array ordered from immediate parent to root
+ */
+export function getAncestryChain(
+  issueId: string,
+  state: Map<string, Issue>
+): Array<{ id: string; title: string }> {
+  const chain: Array<{ id: string; title: string }> = [];
+  let current = state.get(issueId);
+
+  while (current?.parent) {
+    const parent = state.get(current.parent);
+    if (!parent) break;
+    chain.push({ id: parent.id, title: parent.title });
+    current = parent;
+  }
+
+  return chain;
+}
