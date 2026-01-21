@@ -30,7 +30,7 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { Button } from './ui/button';
-import { ArrowUpDown, ChevronRight, ChevronDown, Folder, FolderOpen, Search, X } from 'lucide-react';
+import { ArrowUpDown, ChevronRight, ChevronDown, Folder, FolderOpen, Search, Trash2, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getCommonPrefix, getRelativePath } from '../lib/path';
 
@@ -59,6 +59,8 @@ export interface IssueListProps {
   onActivePresetChange?: React.Dispatch<React.SetStateAction<FilterPreset>>;
   sourceFilter?: string;
   onSourceFilterChange?: React.Dispatch<React.SetStateAction<string>>;
+  showDeleted?: boolean;
+  onShowDeletedChange?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 // Extended issue type with subRows for TanStack hierarchy
@@ -240,6 +242,8 @@ export function IssueList({
   onActivePresetChange,
   sourceFilter: sourceFilterProp,
   onSourceFilterChange,
+  showDeleted: showDeletedProp,
+  onShowDeletedChange,
 }: IssueListProps) {
   // Unused for now, will be used by BulkActionBar
   void _onClearSelection;
@@ -254,6 +258,7 @@ export function IssueList({
   const [expandedInternal, setExpandedInternal] = useState<ExpandedState>({}); // Start collapsed
   const [activePresetInternal, setActivePresetInternal] = useState<FilterPreset>(null);
   const [sourceFilterInternal, setSourceFilterInternal] = useState<string>('');
+  const [showDeletedInternal, setShowDeletedInternal] = useState(false);
 
   // Use props if provided, otherwise use internal state
   const sorting = sortingProp ?? sortingInternal;
@@ -268,6 +273,8 @@ export function IssueList({
   const setActivePreset = onActivePresetChange ?? setActivePresetInternal;
   const sourceFilter = sourceFilterProp ?? sourceFilterInternal;
   const setSourceFilter = onSourceFilterChange ?? setSourceFilterInternal;
+  const showDeleted = showDeletedProp ?? showDeletedInternal;
+  const setShowDeleted = onShowDeletedChange ?? setShowDeletedInternal;
 
   // Create lookup map for O(1) issue access
   const issueMap = useMemo(
@@ -354,7 +361,12 @@ export function IssueList({
   const filteredIssues = useMemo(() => {
     let result = issues;
 
-    // Apply source filter first
+    // Filter out deleted issues unless showDeleted is enabled
+    if (!showDeleted) {
+      result = result.filter((issue) => !issue.deleted);
+    }
+
+    // Apply source filter
     if (sourceFilter) {
       result = result.filter((issue) =>
         issue._sources?.includes(sourceFilter)
@@ -395,7 +407,7 @@ export function IssueList({
           return true;
       }
     });
-  }, [issues, activePreset, issueMap, sourceFilter, globalFilter, searchMatchedIds, ancestorIds]);
+  }, [issues, activePreset, issueMap, sourceFilter, showDeleted, globalFilter, searchMatchedIds, ancestorIds]);
 
   // Build hierarchical data structure from filtered issues
   const hierarchicalData = useMemo(
@@ -596,9 +608,16 @@ export function IssueList({
           const verifiesId = row.original.verifies;
           const verifiesIssue = verifiesId ? issueMap.get(verifiesId) : undefined;
           const verifiesReady = verifiesIssue?.status === 'closed';
+          const isDeleted = row.original.deleted;
           return (
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{row.getValue('title')}</span>
+            <div className={cn("flex items-center gap-2", isDeleted && "opacity-60")}>
+              <span className={cn("font-medium", isDeleted && "line-through")}>{row.getValue('title')}</span>
+              {isDeleted && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 flex items-center gap-1">
+                  <Trash2 className="h-3 w-3" />
+                  Deleted
+                </span>
+              )}
               {/* Verification indicator */}
               {isVerification && verifiesId && (
                 <span
@@ -898,6 +917,16 @@ export function IssueList({
             Clear
           </Button>
         )}
+        <label className="flex items-center gap-1.5 text-sm text-muted-foreground ml-auto cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showDeleted}
+            onChange={(e) => setShowDeleted(e.target.checked)}
+            className="rounded border-muted"
+          />
+          <Trash2 className="h-3.5 w-3.5" />
+          Show deleted
+        </label>
       </div>
 
       <div className="flex flex-wrap gap-4">

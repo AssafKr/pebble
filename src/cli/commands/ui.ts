@@ -14,6 +14,8 @@ import {
   detectCycle,
   computeState,
   getVerifications,
+  getDescendants,
+  getComputedState,
 } from '../lib/state.js';
 import {
   readEventsFromFile,
@@ -30,6 +32,8 @@ import type {
   CloseEvent,
   ReopenEvent,
   CommentEvent,
+  DeleteEvent,
+  RestoreEvent,
   IssueType,
   IssueEvent,
   Priority,
@@ -993,6 +997,186 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
               res.json(updated?.issue || { ...issue, status: 'open', updatedAt: timestamp });
+            } else {
+              res.json(getIssue(issueId));
+            }
+          } catch (error) {
+            res.status(500).json({ error: (error as Error).message });
+          }
+        });
+
+        // POST /api/issues/:id/delete - Soft delete an issue (with cascade for epics)
+        app.post('/api/issues/:id/delete', (req, res) => {
+          try {
+            let issue: Issue;
+            let issueId: string;
+            let targetFile: string;
+
+            if (isMultiWorktree()) {
+              const found = findIssueInSources(req.params.id, issueFiles);
+              if (!found) {
+                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                return;
+              }
+              issue = found.issue;
+              issueId = issue.id;
+              targetFile = found.targetFile;
+            } else {
+              const pebbleDir = getOrCreatePebbleDir();
+              issueId = resolveId(req.params.id);
+              const localIssue = getIssue(issueId);
+              if (!localIssue) {
+                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                return;
+              }
+              issue = localIssue;
+              targetFile = path.join(pebbleDir, 'issues.jsonl');
+            }
+
+            if (issue.deleted) {
+              res.status(400).json({ error: 'Issue is already deleted' });
+              return;
+            }
+
+            const { reason } = req.body;
+            const timestamp = new Date().toISOString();
+            const state = getComputedState();
+
+            // Collect all issues to delete (including cascaded)
+            const toDelete: Array<{ id: string; cascade: boolean }> = [];
+            const alreadyQueued = new Set<string>();
+
+            // Add the main issue
+            toDelete.push({ id: issueId, cascade: false });
+            alreadyQueued.add(issueId);
+
+            // Get descendants for cascade delete
+            const descendants = getDescendants(issueId, state);
+            for (const desc of descendants) {
+              if (!alreadyQueued.has(desc.id) && !desc.deleted) {
+                toDelete.push({ id: desc.id, cascade: true });
+                alreadyQueued.add(desc.id);
+              }
+            }
+
+            // Get verification issues that verify this issue - cascade delete them too
+            const verifications = getVerifications(issueId);
+            for (const v of verifications) {
+              if (!alreadyQueued.has(v.id) && !v.deleted) {
+                toDelete.push({ id: v.id, cascade: true });
+                alreadyQueued.add(v.id);
+              }
+            }
+
+            // Helper to clean up references
+            const cleanupReferences = (deletedId: string) => {
+              for (const [id, iss] of state) {
+                if (id === deletedId || iss.deleted) continue;
+
+                const updates: Partial<{
+                  blockedBy: string[];
+                  relatedTo: string[];
+                  parent: string;
+                }> = {};
+
+                if (iss.blockedBy.includes(deletedId)) {
+                  updates.blockedBy = iss.blockedBy.filter((bid) => bid !== deletedId);
+                }
+                if (iss.relatedTo.includes(deletedId)) {
+                  updates.relatedTo = iss.relatedTo.filter((rid) => rid !== deletedId);
+                }
+                if (iss.parent === deletedId) {
+                  updates.parent = '';
+                }
+
+                if (Object.keys(updates).length > 0) {
+                  const updateEvent: UpdateEvent = {
+                    type: 'update',
+                    issueId: id,
+                    timestamp,
+                    data: updates,
+                  };
+                  appendEventToFile(updateEvent, targetFile);
+                }
+              }
+            };
+
+            // Delete all collected issues
+            for (const { id, cascade } of toDelete) {
+              const iss = state.get(id);
+              if (!iss) continue;
+
+              cleanupReferences(id);
+
+              const deleteEvent: DeleteEvent = {
+                type: 'delete',
+                issueId: id,
+                timestamp,
+                data: {
+                  reason,
+                  cascade: cascade || undefined,
+                  previousStatus: iss.status,
+                },
+              };
+              appendEventToFile(deleteEvent, targetFile);
+            }
+
+            res.json({
+              deleted: toDelete,
+            });
+          } catch (error) {
+            res.status(500).json({ error: (error as Error).message });
+          }
+        });
+
+        // POST /api/issues/:id/restore - Restore a deleted issue
+        app.post('/api/issues/:id/restore', (req, res) => {
+          try {
+            let issue: Issue;
+            let issueId: string;
+            let targetFile: string;
+
+            if (isMultiWorktree()) {
+              const found = findIssueInSources(req.params.id, issueFiles);
+              if (!found) {
+                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                return;
+              }
+              issue = found.issue;
+              issueId = issue.id;
+              targetFile = found.targetFile;
+            } else {
+              const pebbleDir = getOrCreatePebbleDir();
+              issueId = resolveId(req.params.id);
+              const localIssue = getIssue(issueId);
+              if (!localIssue) {
+                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                return;
+              }
+              issue = localIssue;
+              targetFile = path.join(pebbleDir, 'issues.jsonl');
+            }
+
+            if (!issue.deleted) {
+              res.status(400).json({ error: 'Issue is not deleted' });
+              return;
+            }
+
+            const { reason } = req.body;
+            const timestamp = new Date().toISOString();
+
+            const event: RestoreEvent = {
+              type: 'restore',
+              issueId,
+              timestamp,
+              data: { reason },
+            };
+
+            appendEventToFile(event, targetFile);
+
+            if (isMultiWorktree()) {
+              const updated = findIssueInSources(issueId, issueFiles);
+              res.json(updated?.issue || { ...issue, deleted: false, deletedAt: undefined, updatedAt: timestamp });
             } else {
               res.json(getIssue(issueId));
             }

@@ -1,7 +1,7 @@
 import { Command } from 'commander';
-import type { Status } from '../../shared/types.js';
+import type { Status, CommentEvent } from '../../shared/types.js';
 import { STATUSES, STATUS_LABELS } from '../../shared/types.js';
-import { getOrCreatePebbleDir } from '../lib/storage.js';
+import { getOrCreatePebbleDir, readEvents } from '../lib/storage.js';
 import { getIssues, getChildren, getIssue, getVerifications } from '../lib/state.js';
 import { outputError, formatJson } from '../lib/output.js';
 import { formatRelativeTime } from '../../shared/time.js';
@@ -57,6 +57,53 @@ function countVerifications(epicId: string): { total: number; done: number } {
   }
 
   return { total, done };
+}
+
+interface InProgressIssue {
+  id: string;
+  title: string;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+  lastSource?: string;
+  parent?: { id: string; title: string };
+  comments: Array<{ text: string; timestamp: string; source?: string }>;
+}
+
+function getIssueComments(issueId: string): Array<{ text: string; timestamp: string; source?: string }> {
+  const events = readEvents();
+  return events
+    .filter((e): e is CommentEvent => e.type === 'comment' && e.issueId === issueId)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .map((e) => ({ text: e.data.text, timestamp: e.timestamp, source: e.source }));
+}
+
+function formatInProgressPretty(issues: InProgressIssue[]): string {
+  if (issues.length === 0) return '';
+
+  const lines: string[] = [];
+  lines.push(`## In Progress (${issues.length})`);
+  lines.push('');
+
+  for (const issue of issues) {
+    lines.push(`▶ ${issue.id}: ${issue.title} [${issue.type}]`);
+    lines.push(`  Updated: ${formatRelativeTime(issue.updatedAt)}${issue.lastSource ? ` | Source: ${issue.lastSource}` : ''}`);
+    if (issue.parent) {
+      lines.push(`  Parent: ${issue.parent.title}`);
+    }
+    if (issue.comments.length > 0) {
+      const recentComments = issue.comments.slice(0, 3);
+      for (const comment of recentComments) {
+        const truncated = comment.text.length > 100 ? comment.text.substring(0, 100) + '...' : comment.text;
+        lines.push(`    • ${formatRelativeTime(comment.timestamp)}: ${truncated.replace(/\n/g, ' ')}`);
+      }
+      if (issue.comments.length > 3) {
+        lines.push(`    (${issue.comments.length - 3} more comment${issue.comments.length - 3 === 1 ? '' : 's'})`);
+      }
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
 }
 
 function formatSummaryPretty(summaries: EpicSummary[], sectionHeader: string): string {
@@ -177,6 +224,31 @@ export function summaryCommand(program: Command): void {
           return;
         }
 
+        // Get in_progress issues with their comments
+        const inProgressIssues = getIssues({ status: 'in_progress' });
+        inProgressIssues.sort((a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+
+        const inProgressSummaries: InProgressIssue[] = inProgressIssues.map((issue) => {
+          const summary: InProgressIssue = {
+            id: issue.id,
+            title: issue.title,
+            type: issue.type,
+            createdAt: issue.createdAt,
+            updatedAt: issue.updatedAt,
+            lastSource: issue.lastSource,
+            comments: getIssueComments(issue.id),
+          };
+          if (issue.parent) {
+            const parentIssue = getIssue(issue.parent, true);
+            if (parentIssue) {
+              summary.parent = { id: parentIssue.id, title: parentIssue.title };
+            }
+          }
+          return summary;
+        });
+
         // Default: show open epics + recently closed (last 72h)
         const openEpics = allEpics.filter((e) => e.status !== 'closed');
 
@@ -204,7 +276,13 @@ export function summaryCommand(program: Command): void {
 
         if (pretty) {
           const output: string[] = [];
+          // In Progress section first
+          const inProgressOutput = formatInProgressPretty(inProgressSummaries);
+          if (inProgressOutput) {
+            output.push(inProgressOutput);
+          }
           if (openSummaries.length > 0) {
+            if (output.length > 0) output.push('');
             output.push(formatSummaryPretty(openSummaries, 'Open Epics'));
           }
           if (closedSummaries.length > 0) {
@@ -212,11 +290,11 @@ export function summaryCommand(program: Command): void {
             output.push(formatSummaryPretty(closedSummaries, 'Recently Closed Epics (last 72h)'));
           }
           if (output.length === 0) {
-            output.push('No epics found.');
+            output.push('No issues in progress and no epics found.');
           }
           console.log(output.join('\n'));
         } else {
-          console.log(formatJson({ open: openSummaries, closed: closedSummaries }));
+          console.log(formatJson({ inProgress: inProgressSummaries, open: openSummaries, closed: closedSummaries }));
         }
       } catch (error) {
         outputError(error as Error, pretty);

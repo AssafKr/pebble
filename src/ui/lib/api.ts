@@ -206,3 +206,26 @@ export async function bulkUpdateIssues(
   });
   return handleResponse<BulkResult>(response);
 }
+
+// Delete and restore operations
+export interface DeleteResult {
+  deleted: Array<{ id: string; cascade: boolean }>;
+}
+
+export async function deleteIssue(id: string, reason?: string): Promise<DeleteResult> {
+  const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}/delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  return handleResponse<DeleteResult>(response);
+}
+
+export async function restoreIssue(id: string, reason?: string): Promise<Issue> {
+  const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  return handleResponse<Issue>(response);
+}

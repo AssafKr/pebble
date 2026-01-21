@@ -157,6 +157,16 @@ function formatEventData(event: IssueEvent): string {
       return text.length > 100 ? text.substring(0, 100) + '...' : text;
     }
 
+    case 'delete': {
+      const parts: string[] = [];
+      if (event.data.reason) parts.push(event.data.reason);
+      if (event.data.cascade) parts.push('(cascade)');
+      return parts.length > 0 ? parts.join(' ') : 'Deleted';
+    }
+
+    case 'restore':
+      return event.data.reason || 'Restored';
+
     default: {
       // TypeScript exhaustiveness check
       const _exhaustive: never = event;

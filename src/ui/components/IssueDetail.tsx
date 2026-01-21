@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { toast } from 'sonner';
+import { cn } from '../lib/utils';
 import type { Issue, Status, Priority, IssueEvent } from '../../shared/types';
 import {
   STATUS_BADGE_VARIANTS,
@@ -52,6 +53,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Link2,
+  Trash2,
 } from 'lucide-react';
 import { EventTimeline } from './EventTimeline';
 import { formatRelativeTime } from '../../shared/time';
@@ -65,6 +67,7 @@ import {
   removeDependency,
   addRelated,
   removeRelated,
+  restoreIssue,
 } from '../lib/api';
 
 interface IssueDetailProps {
@@ -113,6 +116,7 @@ export function IssueDetail({
   const [savingBlocker, setSavingBlocker] = useState(false);
   const [savingRelated, setSavingRelated] = useState(false);
   const [closingIssue, setClosingIssue] = useState(false);
+  const [restoringIssue, setRestoringIssue] = useState(false);
 
   // Confirmation dialog states
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -359,6 +363,21 @@ export function IssueDetail({
     }
   };
 
+  const handleRestoreIssue = async () => {
+    setRestoringIssue(true);
+    try {
+      await restoreIssue(issue.id);
+      toast.success('Issue restored');
+      onRefresh?.();
+    } catch (err) {
+      toast.error('Failed to restore issue', {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setRestoringIssue(false);
+    }
+  };
+
   const handleAddBlocker = async () => {
     if (!selectedBlocker) return;
     setSavingBlocker(true);
@@ -539,23 +558,50 @@ export function IssueDetail({
           ) : (
             <>
               <h2
-                className="text-lg font-semibold flex-1 cursor-pointer hover:bg-muted rounded px-1 -mx-1"
-                onClick={() => setEditingTitle(true)}
-                title="Click to edit"
+                className={cn(
+                  "text-lg font-semibold flex-1 rounded px-1 -mx-1",
+                  !issue.deleted && "cursor-pointer hover:bg-muted"
+                )}
+                onClick={!issue.deleted ? () => setEditingTitle(true) : undefined}
+                title={!issue.deleted ? "Click to edit" : undefined}
               >
                 {issue.title}
               </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setEditingTitle(true)}
-                title="Edit title"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
+              {!issue.deleted && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditingTitle(true)}
+                  title="Edit title"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
             </>
           )}
         </div>
+
+        {/* Deleted banner */}
+        {issue.deleted && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-md text-sm text-muted-foreground">
+            <Trash2 className="h-4 w-4" />
+            <span>This issue has been deleted</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              onClick={handleRestoreIssue}
+              disabled={restoringIssue}
+            >
+              {restoringIssue ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4 mr-1" />
+              )}
+              Restore
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="p-4 space-y-6">
@@ -566,7 +612,7 @@ export function IssueDetail({
             <Select
               value={issue.status}
               onChange={(e) => handleStatusChange(e.target.value as Status)}
-              disabled={savingStatus || issue.status === 'closed'}
+              disabled={savingStatus || issue.status === 'closed' || issue.deleted}
             >
               {STATUSES.filter((s) => s !== 'closed').map((s) => (
                 <option
@@ -585,7 +631,7 @@ export function IssueDetail({
             <Select
               value={issue.priority}
               onChange={(e) => handlePriorityChange(Number(e.target.value) as Priority)}
-              disabled={savingPriority}
+              disabled={savingPriority || issue.deleted}
             >
               {PRIORITIES.map((p) => (
                 <option key={p} value={p}>
@@ -604,42 +650,44 @@ export function IssueDetail({
           </Badge>
         </div>
 
-        {/* Close/Reopen buttons */}
-        <div className="flex gap-2">
-          {issue.status === 'closed' ? (
-            <Button
-              variant="outline"
-              onClick={handleReopenIssue}
-              disabled={closingIssue}
-            >
-              {closingIssue ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <RotateCcw className="h-4 w-4 mr-2" />
-              )}
-              Reopen Issue
-            </Button>
-          ) : (
-            <Button
-              variant="destructive"
-              onClick={() => setCloseConfirmOpen(true)}
-              disabled={closingIssue}
-            >
-              {closingIssue ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <XCircle className="h-4 w-4 mr-2" />
-              )}
-              Close Issue
-            </Button>
-          )}
-        </div>
+        {/* Close/Reopen buttons (hidden for deleted issues) */}
+        {!issue.deleted && (
+          <div className="flex gap-2">
+            {issue.status === 'closed' ? (
+              <Button
+                variant="outline"
+                onClick={handleReopenIssue}
+                disabled={closingIssue}
+              >
+                {closingIssue ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                )}
+                Reopen Issue
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                onClick={() => setCloseConfirmOpen(true)}
+                disabled={closingIssue}
+              >
+                {closingIssue ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <XCircle className="h-4 w-4 mr-2" />
+                )}
+                Close Issue
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Description */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">Description</h3>
-            {!editingDescription && (
+            {!editingDescription && !issue.deleted && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -887,7 +935,7 @@ export function IssueDetail({
             <h3 className="text-sm font-medium text-destructive">
               Blocked By ({blockedByIssues.length})
             </h3>
-            {availableBlockers.length > 0 && issue.status !== 'closed' && (
+            {availableBlockers.length > 0 && issue.status !== 'closed' && !issue.deleted && (
               <Button
                 variant="outline"
                 size="sm"
@@ -919,7 +967,7 @@ export function IssueDetail({
                       {blocker.status.replace('_', ' ')}
                     </Badge>
                   </button>
-                  {issue.status !== 'closed' && (
+                  {issue.status !== 'closed' && !issue.deleted && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -974,7 +1022,7 @@ export function IssueDetail({
               <Link2 className="h-4 w-4" />
               Related ({relatedIssues.length})
             </h3>
-            {issue.status !== 'closed' && (
+            {issue.status !== 'closed' && !issue.deleted && (
               <Button
                 variant="outline"
                 size="sm"
@@ -1006,7 +1054,7 @@ export function IssueDetail({
                       {related.status.replace('_', ' ')}
                     </Badge>
                   </button>
-                  {issue.status !== 'closed' && (
+                  {issue.status !== 'closed' && !issue.deleted && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -1056,28 +1104,30 @@ export function IssueDetail({
           )}
 
           {/* Add comment form */}
-          <div className="space-y-2 pt-2">
-            <Textarea
-              ref={commentInputRef}
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              rows={2}
-            />
-            <Button
-              size="sm"
-              onClick={handleAddComment}
-              disabled={savingComment || !newComment.trim()}
-              title="Add Comment (c)"
-            >
-              {savingComment ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4 mr-1" />
-              )}
-              Add Comment
-            </Button>
-          </div>
+          {!issue.deleted && (
+            <div className="space-y-2 pt-2">
+              <Textarea
+                ref={commentInputRef}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+                rows={2}
+              />
+              <Button
+                size="sm"
+                onClick={handleAddComment}
+                disabled={savingComment || !newComment.trim()}
+                title="Add Comment (c)"
+              >
+                {savingComment ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-1" />
+                )}
+                Add Comment
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Timestamps */}

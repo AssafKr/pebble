@@ -33,11 +33,13 @@ export interface Issue {
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
   lastSource?: string; // Folder name from most recent event (worktree/repo root)
+  deleted?: boolean; // Soft-deleted flag
+  deletedAt?: string; // ISO timestamp of deletion
   _sources?: string[]; // File paths where this issue exists (multi-worktree)
 }
 
 // Event types for append-only JSONL
-export const EVENT_TYPES = ['create', 'update', 'close', 'reopen', 'comment'] as const;
+export const EVENT_TYPES = ['create', 'update', 'close', 'reopen', 'comment', 'delete', 'restore'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
 // Base event interface
@@ -98,13 +100,33 @@ export interface CommentEvent extends BaseEvent {
   data: Comment;
 }
 
+// Delete event - soft delete
+export interface DeleteEvent extends BaseEvent {
+  type: 'delete';
+  data: {
+    reason?: string;
+    cascade?: boolean; // true if this was cascade-deleted as child of epic
+    previousStatus?: Status; // Status before deletion (for restore)
+  };
+}
+
+// Restore event - undelete
+export interface RestoreEvent extends BaseEvent {
+  type: 'restore';
+  data: {
+    reason?: string;
+  };
+}
+
 // Union type for all events
 export type IssueEvent =
   | CreateEvent
   | UpdateEvent
   | CloseEvent
   | ReopenEvent
-  | CommentEvent;
+  | CommentEvent
+  | DeleteEvent
+  | RestoreEvent;
 
 // Config stored in .pebble/config.json
 export interface PebbleConfig {

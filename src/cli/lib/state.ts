@@ -104,6 +104,28 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
         }
         break;
       }
+
+      case 'delete': {
+        const issue = issues.get(event.issueId);
+        if (issue) {
+          issue.deleted = true;
+          issue.deletedAt = event.timestamp;
+          issue.updatedAt = event.timestamp;
+          if (event.source) issue.lastSource = event.source;
+        }
+        break;
+      }
+
+      case 'restore': {
+        const issue = issues.get(event.issueId);
+        if (issue) {
+          issue.deleted = false;
+          issue.deletedAt = undefined;
+          issue.updatedAt = event.timestamp;
+          if (event.source) issue.lastSource = event.source;
+        }
+        break;
+      }
     }
   }
 
@@ -112,11 +134,17 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
 
 /**
  * Get all issues as an array, optionally filtered
+ * By default excludes deleted issues unless includeDeleted is true
  */
-export function getIssues(filters?: IssueFilters): Issue[] {
+export function getIssues(filters?: IssueFilters, includeDeleted = false): Issue[] {
   const events = readEvents();
   const state = computeState(events);
   let issues = Array.from(state.values());
+
+  // Filter out deleted issues unless explicitly included
+  if (!includeDeleted) {
+    issues = issues.filter((i) => !i.deleted);
+  }
 
   if (filters) {
     if (filters.status !== undefined) {
@@ -138,11 +166,17 @@ export function getIssues(filters?: IssueFilters): Issue[] {
 
 /**
  * Get a single issue by ID
+ * @param id Issue ID
+ * @param includeDeleted If false (default), returns undefined for deleted issues
  */
-export function getIssue(id: string): Issue | undefined {
+export function getIssue(id: string, includeDeleted = false): Issue | undefined {
   const events = readEvents();
   const state = computeState(events);
-  return state.get(id);
+  const issue = state.get(id);
+  if (issue && issue.deleted && !includeDeleted) {
+    return undefined;
+  }
+  return issue;
 }
 
 /**
@@ -202,6 +236,7 @@ export function resolveId(partial: string): string {
 /**
  * Get issues that are ready for work (non-closed with no open blockers)
  * For verification issues: target must be closed
+ * Excludes deleted issues
  */
 export function getReady(): Issue[] {
   const events = readEvents();
@@ -209,6 +244,11 @@ export function getReady(): Issue[] {
   const issues = Array.from(state.values());
 
   return issues.filter((issue) => {
+    // Skip deleted issues
+    if (issue.deleted) {
+      return false;
+    }
+
     // Must not be closed or pending_verification
     if (issue.status === 'closed' || issue.status === 'pending_verification') {
       return false;
@@ -236,6 +276,7 @@ export function getReady(): Issue[] {
 
 /**
  * Get issues that are blocked (have at least one open blocker)
+ * Excludes deleted issues
  */
 export function getBlocked(): Issue[] {
   const events = readEvents();
@@ -243,6 +284,11 @@ export function getBlocked(): Issue[] {
   const issues = Array.from(state.values());
 
   return issues.filter((issue) => {
+    // Skip deleted issues
+    if (issue.deleted) {
+      return false;
+    }
+
     // Must not be closed
     if (issue.status === 'closed') {
       return false;
@@ -516,4 +562,30 @@ export function getAncestryChain(
   }
 
   return chain;
+}
+
+/**
+ * Get all descendants of an issue (children, grandchildren, etc.)
+ * Used for cascade delete of epics
+ * Returns flat array of all descendant issues
+ */
+export function getDescendants(
+  issueId: string,
+  state?: Map<string, Issue>
+): Issue[] {
+  const issueState = state ?? getComputedState();
+  const descendants: Issue[] = [];
+
+  function collectDescendants(parentId: string) {
+    for (const issue of issueState.values()) {
+      if (issue.parent === parentId && !issue.deleted) {
+        descendants.push(issue);
+        // Recursively collect children of this child
+        collectDescendants(issue.id);
+      }
+    }
+  }
+
+  collectDescendants(issueId);
+  return descendants;
 }

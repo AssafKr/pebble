@@ -50,6 +50,7 @@ function AppContent() {
   const [listExpanded, setListExpanded] = useState<ExpandedState>({}); // Start collapsed
   const [listActivePreset, setListActivePreset] = useState<FilterPreset>(null);
   const [listSourceFilter, setListSourceFilter] = useState('');
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // Lifted HistoryView filter state (persists across tab switches)
   const [historySearchFilter, setHistorySearchFilter] = useState('');
@@ -318,6 +319,8 @@ function AppContent() {
                   onActivePresetChange={setListActivePreset}
                   sourceFilter={listSourceFilter}
                   onSourceFilterChange={setListSourceFilter}
+                  showDeleted={showDeleted}
+                  onShowDeletedChange={setShowDeleted}
                 />
               </>
             )}

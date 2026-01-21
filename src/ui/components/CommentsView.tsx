@@ -177,10 +177,20 @@ function CommentCard({
         </Badge>
       </div>
 
-      {/* Ancestry chain */}
+      {/* Parent epic / ancestry */}
       {ancestry.length > 0 && (
+        <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+          <Folder className="h-3 w-3" />
+          <span>
+            {[...ancestry].reverse().map((a) => a.title).join(' → ')}
+          </span>
+        </div>
+      )}
+
+      {/* Issue source */}
+      {issue.lastSource && (
         <div className="text-xs text-muted-foreground mb-2">
-          {[...ancestry].reverse().map((a) => a.id).join(' > ')}
+          Source: {issue.lastSource}
         </div>
       )}
 
