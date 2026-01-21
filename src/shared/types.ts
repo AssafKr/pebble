@@ -32,6 +32,7 @@ export interface Issue {
   comments: Comment[];
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
+  lastSource?: string; // Folder name from most recent event (worktree/repo root)
   _sources?: string[]; // File paths where this issue exists (multi-worktree)
 }
 
@@ -44,6 +45,7 @@ interface BaseEvent {
   type: EventType;
   issueId: string;
   timestamp: string; // ISO timestamp
+  source?: string; // Folder name where command was executed (worktree/repo root)
 }
 
 // Create event - includes all initial issue data

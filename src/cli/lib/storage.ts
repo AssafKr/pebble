@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { IssueEvent, PebbleConfig } from '../../shared/types.js';
 import { derivePrefix } from './id.js';
-import { getMainWorktreeRoot } from './git.js';
+import { getMainWorktreeRoot, getCurrentWorktreeName } from './git.js';
 
 const PEBBLE_DIR = '.pebble';
 const ISSUES_FILE = 'issues.jsonl';
@@ -163,11 +163,34 @@ export function getIssuesPath(pebbleDir?: string): string {
 }
 
 /**
- * Append an event to the JSONL file
+ * Get the source name for events (worktree/repo folder name).
+ * Used to track which worktree a command was executed from.
+ */
+export function getEventSource(): string {
+  // Try git worktree name first
+  const worktreeName = getCurrentWorktreeName();
+  if (worktreeName) {
+    return worktreeName;
+  }
+
+  // Fallback: use folder name where .pebble is located
+  const pebbleDir = discoverPebbleDir();
+  if (pebbleDir) {
+    return path.basename(path.dirname(pebbleDir));
+  }
+
+  return 'unknown';
+}
+
+/**
+ * Append an event to the JSONL file.
+ * Automatically adds source field if not present.
  */
 export function appendEvent(event: IssueEvent, pebbleDir?: string): void {
   const issuesPath = getIssuesPath(pebbleDir);
-  const line = JSON.stringify(event) + '\n';
+  // Add source if not already present
+  const eventWithSource = event.source ? event : { ...event, source: getEventSource() };
+  const line = JSON.stringify(eventWithSource) + '\n';
   fs.appendFileSync(issuesPath, line, 'utf-8');
 }
 

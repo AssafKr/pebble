@@ -9,7 +9,6 @@ import { Select } from './ui/select';
 import { Badge } from './ui/badge';
 import { Clock, Plus, Edit, XCircle, RefreshCw, MessageSquare, Folder, ChevronRight } from 'lucide-react';
 import { formatRelativeTime } from '../../shared/time';
-import { getCommonPrefix, getRelativePath } from '../lib/path';
 
 interface EventGroup {
   issueId: string;
@@ -198,16 +197,6 @@ export function EventTimeline({
     [issues]
   );
 
-  // Compute common prefix for all source paths (for trimming display)
-  const sourcePathPrefix = useMemo(() => {
-    const allSources: string[] = [];
-    for (const issue of issues) {
-      if (issue._sources) {
-        allSources.push(...issue._sources);
-      }
-    }
-    return getCommonPrefix(allSources);
-  }, [issues]);
 
   // Pre-filter events by issueIds if provided
   const scopedEvents = useMemo(() => {
@@ -372,15 +361,6 @@ export function EventTimeline({
                               </span>
                             </>
                           )}
-                          {issue?._sources?.[0] && (
-                            <span
-                              className="text-xs text-muted-foreground flex items-center gap-0.5"
-                              title={issue._sources[0]}
-                            >
-                              <Folder className="h-3 w-3" />
-                              {getRelativePath(issue._sources[0], sourcePathPrefix)}
-                            </span>
-                          )}
                           <Badge variant="secondary" className="text-xs">
                             {group.events.length} events
                           </Badge>
@@ -522,13 +502,13 @@ export function EventTimeline({
                                         </span>
                                       </>
                                     )}
-                                    {issue?._sources?.[0] && (
+                                    {event.source && (
                                       <span
                                         className="text-xs text-muted-foreground flex items-center gap-0.5"
-                                        title={issue._sources[0]}
+                                        title={`From: ${event.source}`}
                                       >
                                         <Folder className="h-3 w-3" />
-                                        {getRelativePath(issue._sources[0], sourcePathPrefix)}
+                                        {event.source}
                                       </span>
                                     )}
                                   </>

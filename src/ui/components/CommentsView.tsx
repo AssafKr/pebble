@@ -3,7 +3,7 @@ import type { IssueEvent, Issue, Status } from '../../shared/types';
 import { STATUS_BADGE_VARIANTS } from '../../shared/types';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { MessageSquare, AlertTriangle } from 'lucide-react';
+import { MessageSquare, AlertTriangle, Folder } from 'lucide-react';
 import { formatRelativeTime } from '../../shared/time';
 
 interface CommentsViewProps {
@@ -199,9 +199,15 @@ function CommentCard({
         {commentText}
       </div>
 
-      {/* Footer: Timestamp */}
-      <div className="mt-2 text-xs text-muted-foreground">
-        {formatRelativeTime(event.timestamp)}
+      {/* Footer: Timestamp and source */}
+      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+        <span>{formatRelativeTime(event.timestamp)}</span>
+        {event.source && (
+          <span className="flex items-center gap-0.5" title={`From: ${event.source}`}>
+            <Folder className="h-3 w-3" />
+            {event.source}
+          </span>
+        )}
       </div>
     </div>
   );

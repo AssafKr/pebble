@@ -647,7 +647,7 @@ export function formatIssueListVerbose(issues: VerboseIssueInfo[], sectionHeader
 
     // Show ancestry chain if available (reversed: root > ... > parent)
     if (ancestry.length > 0) {
-      const chain = [...ancestry].reverse().map(a => a.id).join(' > ');
+      const chain = [...ancestry].reverse().map(a => a.title).join(' → ');
       lines.push(`  Ancestry: ${chain}`);
     }
 

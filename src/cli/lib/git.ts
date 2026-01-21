@@ -69,3 +69,23 @@ export function getMainWorktreeRoot(): string | null {
     return null;
   }
 }
+
+/**
+ * Get the folder name of the current worktree/repo root.
+ * Used to record which worktree a command was executed from.
+ * Returns null if not in a git repo.
+ */
+export function getCurrentWorktreeName(): string | null {
+  try {
+    // Get the current worktree/repo root (works for both main tree and worktrees)
+    const toplevel = execSync('git rev-parse --show-toplevel', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+
+    return path.basename(toplevel);
+  } catch {
+    // Not in a git repository or git not installed
+    return null;
+  }
+}

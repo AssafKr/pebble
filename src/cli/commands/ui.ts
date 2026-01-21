@@ -20,6 +20,7 @@ import {
   getOrCreatePebbleDir,
   appendEvent,
   getConfig,
+  getEventSource,
 } from '../lib/storage.js';
 import { generateId } from '../lib/id.js';
 import { outputError } from '../lib/output.js';
@@ -155,10 +156,13 @@ function findIssueInSources(
 }
 
 /**
- * Append an event to a specific file (for multi-worktree mode)
+ * Append an event to a specific file (for multi-worktree mode).
+ * Automatically adds source field if not present.
  */
 function appendEventToFile(event: IssueEvent, filePath: string): void {
-  const line = JSON.stringify(event) + '\n';
+  // Add source if not already present
+  const eventWithSource = event.source ? event : { ...event, source: getEventSource() };
+  const line = JSON.stringify(eventWithSource) + '\n';
   fs.appendFileSync(filePath, line, 'utf-8');
 }
 

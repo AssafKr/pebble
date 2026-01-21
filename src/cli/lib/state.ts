@@ -33,6 +33,7 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
           comments: [],
           createdAt: event.timestamp,
           updatedAt: event.timestamp,
+          lastSource: event.source,
         };
         issues.set(event.issueId, issue);
         break;
@@ -68,6 +69,7 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
             issue.relatedTo = updateEvent.data.relatedTo;
           }
           issue.updatedAt = event.timestamp;
+          if (event.source) issue.lastSource = event.source;
         }
         break;
       }
@@ -77,6 +79,7 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
         if (issue) {
           issue.status = 'closed';
           issue.updatedAt = event.timestamp;
+          if (event.source) issue.lastSource = event.source;
         }
         break;
       }
@@ -86,6 +89,7 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
         if (issue) {
           issue.status = 'open';
           issue.updatedAt = event.timestamp;
+          if (event.source) issue.lastSource = event.source;
         }
         break;
       }
@@ -96,6 +100,7 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
         if (issue) {
           issue.comments.push(commentEvent.data);
           issue.updatedAt = event.timestamp;
+          if (event.source) issue.lastSource = event.source;
         }
         break;
       }

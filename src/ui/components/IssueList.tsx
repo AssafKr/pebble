@@ -30,7 +30,7 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { Button } from './ui/button';
-import { ArrowUpDown, ChevronRight, ChevronDown, FolderSync, Folder, FolderOpen, Search, X } from 'lucide-react';
+import { ArrowUpDown, ChevronRight, ChevronDown, Folder, FolderOpen, Search, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getCommonPrefix, getRelativePath } from '../lib/path';
 
@@ -470,8 +470,7 @@ export function IssueList({
           const canExpand = row.getCanExpand();
           const depth = row.depth;
           const isGroup = row.original._isGroup;
-          const sources = row.original._sources;
-          const relativePath = sources?.[0] ? getRelativePath(sources[0], sourcePathPrefix) : null;
+          const lastSource = row.original.lastSource;
 
           // Special rendering for synthetic group rows
           if (isGroup) {
@@ -522,24 +521,15 @@ export function IssueList({
                 )}
                 <span className="font-mono text-xs">{row.getValue('id')}</span>
               </div>
-              {/* Source path row */}
-              {relativePath && sources && (
+              {/* Source folder row */}
+              {lastSource && (
                 <div
                   className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5"
                   style={{ paddingLeft: '20px' }}
-                  title={sources[0]}
+                  title={`Last modified from: ${lastSource}`}
                 >
-                  {sources.length > 1 ? (
-                    <>
-                      <FolderSync className="h-3 w-3 flex-shrink-0" />
-                      <span>{sources.length} sources</span>
-                    </>
-                  ) : (
-                    <>
-                      <Folder className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{relativePath}</span>
-                    </>
-                  )}
+                  <Folder className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{lastSource}</span>
                 </div>
               )}
             </div>
