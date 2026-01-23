@@ -13,7 +13,7 @@ export function updateCommand(program: Command): void {
     .option('--priority <priority>', 'Priority (0-4)')
     .option('--title <title>', 'Title')
     .option('--description <desc>', 'Description')
-    .option('--parent <id>', 'Parent epic ID (use "null" to remove parent)')
+    .option('--parent <id>', 'Parent issue ID (use "null" to remove parent)')
     .action(async (ids: string[], options) => {
       const pretty = program.opts().pretty ?? false;
 
@@ -70,11 +70,11 @@ export function updateCommand(program: Command): void {
             if (!parentIssue) {
               throw new Error(`Parent issue not found: ${options.parent}`);
             }
-            if (parentIssue.type !== 'epic') {
-              throw new Error(`Parent must be an epic. ${parentId} is a ${parentIssue.type}`);
+            if (parentIssue.type === 'verification') {
+              throw new Error(`Verification issues cannot be parents`);
             }
             if (parentIssue.status === 'closed') {
-              throw new Error(`Cannot set parent to closed epic: ${parentId}`);
+              throw new Error(`Cannot set parent to closed issue: ${parentId}`);
             }
             data.parent = parentId;
           }

@@ -481,12 +481,12 @@ export function uiCommand(program: Command): void {
                 res.status(400).json({ error: `Parent issue not found: ${parent}` });
                 return;
               }
-              if (parentIssue.type !== 'epic') {
-                res.status(400).json({ error: 'Parent must be an epic' });
+              if (parentIssue.type === 'verification') {
+                res.status(400).json({ error: 'Verification issues cannot be parents' });
                 return;
               }
               if (parentIssue.status === 'closed') {
-                res.status(400).json({ error: 'Cannot add children to a closed epic' });
+                res.status(400).json({ error: 'Cannot add children to a closed issue' });
                 return;
               }
             }
@@ -741,8 +741,8 @@ export function uiCommand(program: Command): void {
                     res.status(400).json({ error: `Parent issue not found: ${parent}` });
                     return;
                   }
-                  if (parentFound.issue.type !== 'epic') {
-                    res.status(400).json({ error: 'Parent must be an epic' });
+                  if (parentFound.issue.type === 'verification') {
+                    res.status(400).json({ error: 'Verification issues cannot be parents' });
                     return;
                   }
                 } else {
@@ -751,8 +751,8 @@ export function uiCommand(program: Command): void {
                     res.status(400).json({ error: `Parent issue not found: ${parent}` });
                     return;
                   }
-                  if (parentIssue.type !== 'epic') {
-                    res.status(400).json({ error: 'Parent must be an epic' });
+                  if (parentIssue.type === 'verification') {
+                    res.status(400).json({ error: 'Verification issues cannot be parents' });
                     return;
                   }
                 }

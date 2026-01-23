@@ -84,7 +84,7 @@ pb ui
 - `-t, --type <type>` — Issue type: task, bug, epic (default: task)
 - `-p, --priority <n>` — Priority: 0=critical, 4=backlog (default: 2)
 - `-d, --description <text>` — Description
-- `--parent <id>` — Parent epic ID
+- `--parent <id>` — Parent issue ID
 
 ### List
 
@@ -112,7 +112,7 @@ pb ui
   priority: 0-4;        // 0=critical, 4=backlog
   status: 'open' | 'in_progress' | 'blocked' | 'closed';
   description?: string;
-  parent?: string;      // Parent epic ID
+  parent?: string;      // Parent issue ID
   blockedBy: string[];  // IDs of blocking issues
   comments: Comment[];
   createdAt: string;

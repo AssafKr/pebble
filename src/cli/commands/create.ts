@@ -13,7 +13,7 @@ export function createCommand(program: Command): void {
     .option('-t, --type <type>', 'Issue type (task, bug, epic, verification)', 'task')
     .option('-p, --priority <priority>', 'Priority (0-4)', '2')
     .option('-d, --description <desc>', 'Description')
-    .option('--parent <id>', 'Parent epic ID')
+    .option('--parent <id>', 'Parent issue ID')
     .option('--verifies <id>', 'ID of issue this verifies (sets type to verification)')
     .option('--blocked-by <ids>', 'Comma-separated IDs of issues that block this one')
     .option('--blocks <ids>', 'Comma-separated IDs of issues this one will block')
@@ -55,11 +55,11 @@ export function createCommand(program: Command): void {
           if (!parent) {
             throw new Error(`Parent issue not found: ${options.parent}`);
           }
-          if (parent.type !== 'epic') {
-            throw new Error(`Parent must be an epic, got: ${parent.type}`);
+          if (parent.type === 'verification') {
+            throw new Error(`Verification issues cannot be parents`);
           }
           if (parent.status === 'closed') {
-            throw new Error(`Cannot add children to closed epic: ${parentId}`);
+            throw new Error(`Cannot add children to closed issue: ${parentId}`);
           }
         }
 

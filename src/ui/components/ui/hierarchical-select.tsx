@@ -33,7 +33,7 @@ export function HierarchicalSelect({
   value,
   onChange,
   disabled = false,
-  placeholder = 'Select parent epic...',
+  placeholder = 'Select parent...',
 }: HierarchicalSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -224,7 +224,7 @@ export function HierarchicalSelect({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search epics..."
+              placeholder="Search..."
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               autoFocus
             />
@@ -248,7 +248,7 @@ export function HierarchicalSelect({
 
             {filteredList.length === 0 ? (
               <div className="px-3 py-2 text-sm text-muted-foreground">
-                No epics found
+                No issues found
               </div>
             ) : (
               filteredList.map((node, index) => {
