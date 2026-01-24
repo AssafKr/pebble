@@ -1,6 +1,6 @@
 {
   "name": "@markmdev/pebble",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "description": "A lightweight JSONL-based issue tracker with CLI and React UI",
   "type": "module",
   "main": "dist/cli/index.js",
