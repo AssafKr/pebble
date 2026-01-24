@@ -475,6 +475,7 @@ export function uiCommand(program: Command): void {
             }
 
             // Validate parent if provided
+            let parentReopened: { id: string; title: string } | undefined;
             if (parent) {
               const parentIssue = getIssue(parent);
               if (!parentIssue) {
@@ -485,9 +486,16 @@ export function uiCommand(program: Command): void {
                 res.status(400).json({ error: 'Verification issues cannot be parents' });
                 return;
               }
+              // Auto-reopen closed parent instead of returning error
               if (parentIssue.status === 'closed') {
-                res.status(400).json({ error: 'Cannot add children to a closed issue' });
-                return;
+                const reopenEvent: ReopenEvent = {
+                  type: 'reopen',
+                  issueId: parent,
+                  timestamp: new Date().toISOString(),
+                  data: { reason: 'Reopened to add child' },
+                };
+                appendEvent(reopenEvent, pebbleDir);
+                parentReopened = { id: parent, title: parentIssue.title };
               }
             }
 
@@ -509,7 +517,8 @@ export function uiCommand(program: Command): void {
 
             appendEvent(event, pebbleDir);
             const issue = getIssue(issueId);
-            res.status(201).json(issue);
+            const result = parentReopened ? { ...issue, _parentReopened: parentReopened } : issue;
+            res.status(201).json(result);
           } catch (error) {
             res.status(500).json({ error: (error as Error).message });
           }

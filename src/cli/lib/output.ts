@@ -176,7 +176,8 @@ export function formatIssueDetailPretty(issue: Issue, ctx: IssueDetailContext): 
   lines.push('─'.repeat(60));
   lines.push(`Type:     ${formatType(issue.type)}`);
   lines.push(`Priority: ${formatPriority(issue.priority)}`);
-  lines.push(`Status:   ${formatStatus(issue.status)}`);
+  const statusTime = issue.statusChangedAt ? ` (${formatRelativeTime(issue.statusChangedAt)})` : '';
+  lines.push(`Status:   ${formatStatus(issue.status)}${statusTime}`);
 
   // Show ancestry chain if available
   if (ctx.ancestry && ctx.ancestry.length > 0) {
@@ -249,8 +250,8 @@ export function formatIssueDetailPretty(issue: Issue, ctx: IssueDetailContext): 
   }
 
   lines.push('');
-  lines.push(`Created: ${new Date(issue.createdAt).toLocaleString()}`);
-  lines.push(`Updated: ${new Date(issue.updatedAt).toLocaleString()}`);
+  lines.push(`Created: ${formatRelativeTime(issue.createdAt)}`);
+  lines.push(`Updated: ${formatRelativeTime(issue.updatedAt)}`);
 
   return lines.join('\n');
 }
@@ -448,13 +449,28 @@ export function outputIssueWithBlocking(issue: Issue, blocking: Issue[], pretty:
 }
 
 /**
+ * Extra info that can be included in mutation responses
+ */
+export interface MutationExtra {
+  parentReopened?: { id: string; title: string };
+}
+
+/**
  * Output a mutation success response (minimal: id + success)
  */
-export function outputMutationSuccess(id: string, pretty: boolean): void {
+export function outputMutationSuccess(id: string, pretty: boolean, extra?: MutationExtra): void {
   if (pretty) {
-    console.log(`✓ ${id}`);
+    if (extra?.parentReopened) {
+      console.log(`✓ ${id} (parent ${extra.parentReopened.id} reopened)`);
+    } else {
+      console.log(`✓ ${id}`);
+    }
   } else {
-    console.log(JSON.stringify({ id, success: true }));
+    const result: Record<string, unknown> = { id, success: true };
+    if (extra?.parentReopened) {
+      result._parentReopened = extra.parentReopened;
+    }
+    console.log(JSON.stringify(result));
   }
 }
 
@@ -487,6 +503,7 @@ export interface IssueTreeNode {
   priority: number;
   status: string;
   createdAt: string;
+  statusChangedAt?: string;
   childrenCount: number;
   children?: IssueTreeNode[];
 }
@@ -521,6 +538,7 @@ export function buildIssueTree(issues: Issue[]): IssueTreeNode[] {
       priority: issue.priority,
       status: issue.status,
       createdAt: issue.createdAt,
+      statusChangedAt: issue.statusChangedAt,
       childrenCount: children.length,
       ...(children.length > 0 && { children }),
     };
@@ -556,7 +574,7 @@ export function formatIssueTreePretty(nodes: IssueTreeNode[], sectionHeader?: st
     const connector = isRoot ? '' : isLast ? '└─ ' : '├─ ';
     const statusIcon = node.status === 'closed' ? '✓' : node.status === 'in_progress' ? '▶' : node.status === 'pending_verification' ? '⏳' : '○';
     const statusText = STATUS_LABELS[node.status as Status].toLowerCase();
-    const relativeTime = formatRelativeTime(node.createdAt);
+    const relativeTime = node.statusChangedAt ? formatRelativeTime(node.statusChangedAt) : formatRelativeTime(node.createdAt);
 
     lines.push(`${prefix}${connector}${statusIcon} ${node.id}: ${node.title} [${node.type}] P${node.priority} ${statusText} ${relativeTime}`);
 
@@ -642,8 +660,9 @@ export function formatIssueListVerbose(issues: VerboseIssueInfo[], sectionHeader
   for (const info of issues) {
     const { issue, blocking, children, verifications, blockers, ancestry } = info;
 
+    const statusTime = issue.statusChangedAt ? formatRelativeTime(issue.statusChangedAt) : formatRelativeTime(issue.createdAt);
     lines.push(`${issue.id}: ${issue.title}`);
-    lines.push(`  Type: ${formatType(issue.type)} | Priority: P${issue.priority} | Created: ${formatRelativeTime(issue.createdAt)}`);
+    lines.push(`  Type: ${formatType(issue.type)} | Priority: P${issue.priority} | Status: ${formatStatus(issue.status)} (${statusTime})`);
 
     // Show ancestry chain if available (reversed: root > ... > parent)
     if (ancestry.length > 0) {

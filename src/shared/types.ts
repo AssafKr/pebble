@@ -32,6 +32,7 @@ export interface Issue {
   comments: Comment[];
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
+  statusChangedAt?: string; // ISO timestamp of last status change
   lastSource?: string; // Folder name from most recent event (worktree/repo root)
   deleted?: boolean; // Soft-deleted flag
   deletedAt?: string; // ISO timestamp of deletion

@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import type { IssueType, Priority, CreateEvent, UpdateEvent } from '../../shared/types.js';
+import type { IssueType, Priority, CreateEvent, UpdateEvent, ReopenEvent } from '../../shared/types.js';
 import { ISSUE_TYPES, PRIORITIES } from '../../shared/types.js';
 import { getOrCreatePebbleDir, getConfig, appendEvent } from '../lib/storage.js';
 import { generateId } from '../lib/id.js';
@@ -49,6 +49,7 @@ export function createCommand(program: Command): void {
 
         // Resolve parent if provided
         let parentId: string | undefined;
+        let parentReopened: { id: string; title: string } | undefined;
         if (options.parent) {
           parentId = resolveId(options.parent);
           const parent = getIssue(parentId);
@@ -58,8 +59,16 @@ export function createCommand(program: Command): void {
           if (parent.type === 'verification') {
             throw new Error(`Verification issues cannot be parents`);
           }
+          // Auto-reopen closed parent instead of throwing error
           if (parent.status === 'closed') {
-            throw new Error(`Cannot add children to closed issue: ${parentId}`);
+            const reopenEvent: ReopenEvent = {
+              type: 'reopen',
+              issueId: parentId,
+              timestamp: new Date().toISOString(),
+              data: { reason: 'Reopened to add child' },
+            };
+            appendEvent(reopenEvent, pebbleDir);
+            parentReopened = { id: parentId, title: parent.title };
           }
         }
 
@@ -150,7 +159,7 @@ export function createCommand(program: Command): void {
         }
 
         // Output success
-        outputMutationSuccess(id, pretty);
+        outputMutationSuccess(id, pretty, parentReopened ? { parentReopened } : undefined);
       } catch (error) {
         outputError(error as Error, pretty);
       }

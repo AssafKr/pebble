@@ -1036,10 +1036,11 @@ export function IssueList({
                   status === 'closed' ? 'border-l-4 border-l-green-500' :
                   '';
                 const isClosedRow = status === 'closed';
+                const isEpic = row.original.type === 'epic' && !isGroup;
                 return (
                 <TableRow
                   key={row.id}
-                  className={`${isGroup ? '' : 'cursor-pointer'} ${statusBorder} ${isClosedRow ? 'bg-muted/30 opacity-75' : ''} ${isGroup ? 'bg-muted/50' : ''}`}
+                  className={`${isGroup ? '' : 'cursor-pointer'} ${statusBorder} ${isClosedRow ? 'bg-muted/30 opacity-75' : ''} ${isGroup ? 'bg-muted/50' : ''} ${isEpic ? 'bg-purple-50 dark:bg-purple-950/20' : ''}`}
                   onClick={() => !isGroup && onSelectIssue(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (

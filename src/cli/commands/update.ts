@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import type { Priority, Status, UpdateEvent } from '../../shared/types.js';
+import type { Priority, Status, UpdateEvent, ReopenEvent } from '../../shared/types.js';
 import { PRIORITIES, STATUSES } from '../../shared/types.js';
 import { getOrCreatePebbleDir, appendEvent } from '../lib/storage.js';
 import { getIssue, resolveId, hasOpenBlockersById, getOpenBlockers } from '../lib/state.js';
@@ -59,6 +59,9 @@ export function updateCommand(program: Command): void {
           hasChanges = true;
         }
 
+        // Track if we need to reopen a parent
+        let parentReopened: { id: string; title: string } | undefined;
+
         if (options.parent !== undefined) {
           if (options.parent.toLowerCase() === 'null') {
             // Remove parent - use empty string as sentinel (undefined would be ignored by state.ts)
@@ -73,8 +76,16 @@ export function updateCommand(program: Command): void {
             if (parentIssue.type === 'verification') {
               throw new Error(`Verification issues cannot be parents`);
             }
+            // Auto-reopen closed parent instead of throwing error
             if (parentIssue.status === 'closed') {
-              throw new Error(`Cannot set parent to closed issue: ${parentId}`);
+              const reopenEvent: ReopenEvent = {
+                type: 'reopen',
+                issueId: parentId,
+                timestamp: new Date().toISOString(),
+                data: { reason: 'Reopened to add child' },
+              };
+              appendEvent(reopenEvent, pebbleDir);
+              parentReopened = { id: parentId, title: parentIssue.title };
             }
             data.parent = parentId;
           }
@@ -124,7 +135,7 @@ export function updateCommand(program: Command): void {
           // Single issue - output success or error
           const result = results[0];
           if (result.success) {
-            outputMutationSuccess(result.id, pretty);
+            outputMutationSuccess(result.id, pretty, parentReopened ? { parentReopened } : undefined);
           } else {
             throw new Error(result.error || 'Unknown error');
           }

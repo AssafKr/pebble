@@ -33,6 +33,7 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
           comments: [],
           createdAt: event.timestamp,
           updatedAt: event.timestamp,
+          statusChangedAt: event.timestamp, // Initial status is 'open'
           lastSource: event.source,
         };
         issues.set(event.issueId, issue);
@@ -53,6 +54,9 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
             issue.priority = updateEvent.data.priority;
           }
           if (updateEvent.data.status !== undefined) {
+            if (issue.status !== updateEvent.data.status) {
+              issue.statusChangedAt = event.timestamp;
+            }
             issue.status = updateEvent.data.status;
           }
           if (updateEvent.data.description !== undefined) {
@@ -78,6 +82,7 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
         const issue = issues.get(event.issueId);
         if (issue) {
           issue.status = 'closed';
+          issue.statusChangedAt = event.timestamp;
           issue.updatedAt = event.timestamp;
           if (event.source) issue.lastSource = event.source;
         }
@@ -88,6 +93,7 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
         const issue = issues.get(event.issueId);
         if (issue) {
           issue.status = 'open';
+          issue.statusChangedAt = event.timestamp;
           issue.updatedAt = event.timestamp;
           if (event.source) issue.lastSource = event.source;
         }

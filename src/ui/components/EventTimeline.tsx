@@ -7,7 +7,7 @@ import {
 import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { Badge } from './ui/badge';
-import { Clock, Plus, Edit, XCircle, RefreshCw, MessageSquare, Folder, ChevronRight } from 'lucide-react';
+import { Clock, Plus, Edit, XCircle, RefreshCw, MessageSquare, Folder, ChevronRight, Trash2, RotateCcw } from 'lucide-react';
 import { formatRelativeTime } from '../../shared/time';
 
 interface EventGroup {
@@ -89,27 +89,37 @@ const eventTypeConfig: Record<
   create: {
     icon: <Plus className="h-4 w-4" />,
     label: 'Created',
-    color: 'bg-green-100 text-green-800',
+    color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   },
   update: {
     icon: <Edit className="h-4 w-4" />,
     label: 'Updated',
-    color: 'bg-blue-100 text-blue-800',
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
   },
   close: {
     icon: <XCircle className="h-4 w-4" />,
     label: 'Closed',
-    color: 'bg-gray-100 text-gray-800',
+    color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
   },
   reopen: {
     icon: <RefreshCw className="h-4 w-4" />,
     label: 'Reopened',
-    color: 'bg-yellow-100 text-yellow-800',
+    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
   },
   comment: {
     icon: <MessageSquare className="h-4 w-4" />,
     label: 'Comment',
-    color: 'bg-purple-100 text-purple-800',
+    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  },
+  delete: {
+    icon: <Trash2 className="h-4 w-4" />,
+    label: 'Deleted',
+    color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  },
+  restore: {
+    icon: <RotateCcw className="h-4 w-4" />,
+    label: 'Restored',
+    color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
   },
 };
 
