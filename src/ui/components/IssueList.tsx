@@ -1041,19 +1041,21 @@ export function IssueList({
                   'border-l-4 border-l-amber-400'; // open
                 const isClosedRow = status === 'closed';
                 const issueType = row.original.type;
-                const typeBg = isGroup ? '' :
+                // Apply type backgrounds to cells (not row) to avoid bleeding through rounded corners
+                const cellTypeBg = isGroup ? '' :
+                  isClosedRow ? 'bg-muted/30' :
                   issueType === 'epic' ? 'bg-indigo-100 dark:bg-indigo-950/40' :
                   issueType === 'bug' ? 'bg-rose-50 dark:bg-rose-950/30' :
                   issueType === 'verification' ? 'bg-cyan-50 dark:bg-cyan-950/30' :
-                  '';
+                  'bg-surface';
                 return (
                 <TableRow
                   key={row.id}
-                  className={`${isGroup ? '' : 'cursor-pointer'} ${statusBorder} ${isClosedRow ? 'bg-muted/30 opacity-75' : typeBg} ${isGroup ? 'bg-muted/50' : ''}`}
+                  className={`${isGroup ? '' : 'cursor-pointer'} ${statusBorder} ${isClosedRow ? 'opacity-75' : ''} ${isGroup ? 'bg-muted/50' : ''}`}
                   onClick={() => !isGroup && onSelectIssue(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className={cellTypeBg}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

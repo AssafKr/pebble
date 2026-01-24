@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { useIssues } from './hooks/useIssues';
@@ -20,6 +21,18 @@ import { fetchSources, type SourcesResponse } from './lib/api';
 import { List, History, LayoutDashboard, RefreshCw, Loader2, Plus, FolderSync, MessageSquare } from 'lucide-react';
 
 type View = 'list' | 'dashboard' | 'history' | 'comments';
+
+// Page transition variants
+const pageVariants = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -4 },
+};
+
+const pageTransition = {
+  duration: 0.25,
+  ease: [0.4, 0, 0.2, 1] as const,
+};
 
 function AppContent() {
   const { resolvedTheme } = useTheme();
@@ -170,11 +183,15 @@ function AppContent() {
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold text-destructive">Error</h1>
-          <p className="text-muted-foreground">{error.message}</p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-4 p-8 bg-surface rounded-2xl shadow-lg border border-border"
+        >
+          <h1 className="text-2xl font-display font-semibold text-destructive">Something went wrong</h1>
+          <p className="text-foreground-muted">{error.message}</p>
           <Button onClick={refresh}>Try Again</Button>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -182,69 +199,55 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b sticky top-0 bg-background z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="border-b border-border-subtle sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+        <div className="container mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">pebble</h1>
-            <span className="text-sm text-muted-foreground">
+            <h1 className="text-3xl font-display font-semibold italic text-primary">pebble</h1>
+            <span className="text-sm text-foreground-muted bg-background-subtle px-3 py-1 rounded-full">
               {issues.length} issues
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
-              size="sm"
               onClick={() => setCreateDialogOpen(true)}
               title="New Issue (n)"
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4 mr-2" />
               New Issue
             </Button>
 
-            <div className="flex border rounded-lg">
-              <Button
-                variant={view === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => handleViewChange('list')}
-                className="rounded-r-none"
-              >
-                <List className="h-4 w-4 mr-1" />
-                List
-              </Button>
-              <Button
-                variant={view === 'dashboard' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => handleViewChange('dashboard')}
-                className="rounded-none border-x"
-              >
-                <LayoutDashboard className="h-4 w-4 mr-1" />
-                Dashboard
-              </Button>
-              <Button
-                variant={view === 'history' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => handleViewChange('history')}
-                className="rounded-none border-r"
-              >
-                <History className="h-4 w-4 mr-1" />
-                History
-              </Button>
-              <Button
-                variant={view === 'comments' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => handleViewChange('comments')}
-                className="rounded-l-none"
-              >
-                <MessageSquare className="h-4 w-4 mr-1" />
-                Comments
-              </Button>
+            {/* Tab navigation as pills */}
+            <div className="flex bg-background-subtle rounded-xl p-1">
+              {[
+                { key: 'list' as const, icon: List, label: 'List' },
+                { key: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
+                { key: 'history' as const, icon: History, label: 'History' },
+                { key: 'comments' as const, icon: MessageSquare, label: 'Comments' },
+              ].map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => handleViewChange(key)}
+                  className={`
+                    flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-fast
+                    ${view === key
+                      ? 'bg-surface text-foreground shadow-sm'
+                      : 'text-foreground-muted hover:text-foreground hover:bg-surface/50'
+                    }
+                  `}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              ))}
             </div>
 
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon"
               onClick={refresh}
               disabled={loading}
+              className="text-foreground-muted hover:text-foreground"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -254,14 +257,17 @@ function AppContent() {
             </Button>
 
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon"
               onClick={() => setSourceManagerOpen(true)}
               title="Manage issue sources"
+              className="text-foreground-muted hover:text-foreground"
             >
               <FolderSync className="h-4 w-4" />
               {sources?.isMultiWorktree && (
-                <span className="ml-1 text-xs">{sources.files.length}</span>
+                <span className="ml-1 text-xs bg-accent text-accent-foreground px-1.5 rounded-full">
+                  {sources.files.length}
+                </span>
               )}
             </Button>
 
@@ -280,20 +286,34 @@ function AppContent() {
         onNavigateToView={handleViewChange}
       />
 
-      {/* Main content */}
+      {/* Main content with view transitions */}
       <main
-        className={`px-4 py-6 transition-all duration-200 ${
-          selectedIssue ? 'mr-[500px]' : ''
+        className={`px-6 py-8 transition-all duration-normal ${
+          selectedIssue ? 'mr-[520px]' : ''
         }`}
       >
         {loading && issues.length === 0 ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center gap-3"
+            >
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="text-sm text-foreground-muted">Loading issues...</span>
+            </motion.div>
           </div>
         ) : (
-          <>
+          <AnimatePresence mode="wait">
             {view === 'list' && (
-              <>
+              <motion.div
+                key="list"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={pageTransition}
+              >
                 <BulkActionBar
                   selectedIds={selectedIds}
                   onClearSelection={handleClearSelection}
@@ -322,53 +342,82 @@ function AppContent() {
                   showDeleted={showDeleted}
                   onShowDeletedChange={setShowDeleted}
                 />
-              </>
+              </motion.div>
             )}
             {view === 'dashboard' && (
-              <Dashboard
-                issues={issues}
-                events={events}
-                onSelectIssue={handleSelectIssue}
-              />
+              <motion.div
+                key="dashboard"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={pageTransition}
+              >
+                <Dashboard
+                  issues={issues}
+                  events={events}
+                  onSelectIssue={handleSelectIssue}
+                />
+              </motion.div>
             )}
             {view === 'history' && (
-              <HistoryView
-                events={events}
-                issues={issues}
-                onSelectIssue={handleSelectIssue}
-                searchFilter={historySearchFilter}
-                onSearchFilterChange={setHistorySearchFilter}
-                typeFilter={historyTypeFilter}
-                onTypeFilterChange={setHistoryTypeFilter}
-                issueFilter={historyIssueFilter}
-                onIssueFilterChange={setHistoryIssueFilter}
-              />
+              <motion.div
+                key="history"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={pageTransition}
+              >
+                <HistoryView
+                  events={events}
+                  issues={issues}
+                  onSelectIssue={handleSelectIssue}
+                  searchFilter={historySearchFilter}
+                  onSearchFilterChange={setHistorySearchFilter}
+                  typeFilter={historyTypeFilter}
+                  onTypeFilterChange={setHistoryTypeFilter}
+                  issueFilter={historyIssueFilter}
+                  onIssueFilterChange={setHistoryIssueFilter}
+                />
+              </motion.div>
             )}
             {view === 'comments' && (
-              <CommentsView
-                events={events}
-                issues={issues}
-                onSelectIssue={handleSelectIssue}
-                searchFilter={commentsSearchFilter}
-                onSearchFilterChange={setCommentsSearchFilter}
-              />
+              <motion.div
+                key="comments"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={pageTransition}
+              >
+                <CommentsView
+                  events={events}
+                  issues={issues}
+                  onSelectIssue={handleSelectIssue}
+                  searchFilter={commentsSearchFilter}
+                  onSearchFilterChange={setCommentsSearchFilter}
+                />
+              </motion.div>
             )}
-          </>
+          </AnimatePresence>
         )}
       </main>
 
       {/* Issue detail panel */}
-      {selectedIssue && (
-        <IssueDetail
-          issue={selectedIssue}
-          allIssues={issues}
-          events={events}
-          onClose={handleCloseDetail}
-          onSelectIssue={handleSelectIssue}
-          onRefresh={refresh}
-          commentInputRef={commentInputRef}
-        />
-      )}
+      <AnimatePresence>
+        {selectedIssue && (
+          <IssueDetail
+            issue={selectedIssue}
+            allIssues={issues}
+            events={events}
+            onClose={handleCloseDetail}
+            onSelectIssue={handleSelectIssue}
+            onRefresh={refresh}
+            commentInputRef={commentInputRef}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Create issue dialog */}
       <CreateIssueForm
@@ -391,7 +440,18 @@ function AppContent() {
       )}
 
       {/* Toast notifications */}
-      <Toaster position="bottom-right" richColors theme={resolvedTheme} />
+      <Toaster
+        position="bottom-right"
+        richColors
+        theme={resolvedTheme}
+        toastOptions={{
+          className: 'font-sans',
+          style: {
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid hsl(var(--border))',
+          },
+        }}
+      />
     </div>
   );
 }

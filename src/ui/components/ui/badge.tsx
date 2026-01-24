@@ -3,17 +3,40 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-all duration-fast',
   {
     variants: {
       variant: {
         default:
-          'border-transparent bg-primary text-primary-foreground hover:bg-primary/80',
+          'bg-primary text-primary-foreground shadow-xs',
         secondary:
-          'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
+          'bg-secondary text-secondary-foreground',
         destructive:
-          'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
-        outline: 'text-foreground',
+          'bg-destructive text-destructive-foreground shadow-xs',
+        outline:
+          'border border-border text-foreground bg-surface',
+        muted:
+          'bg-muted text-muted-foreground',
+        // Status variants
+        open:
+          'bg-status-open/15 text-status-open border border-status-open/30',
+        progress:
+          'bg-status-progress/15 text-status-progress border border-status-progress/30',
+        blocked:
+          'bg-status-blocked/15 text-status-blocked border border-status-blocked/30',
+        pending:
+          'bg-status-pending/15 text-status-pending border border-status-pending/30',
+        closed:
+          'bg-status-closed/15 text-status-closed border border-status-closed/30',
+        // Type variants
+        epic:
+          'bg-type-epic text-white shadow-xs',
+        bug:
+          'bg-type-bug text-white shadow-xs',
+        verification:
+          'bg-type-verification text-white shadow-xs',
+        task:
+          'bg-type-task text-white shadow-xs',
       },
     },
     defaultVariants: {
