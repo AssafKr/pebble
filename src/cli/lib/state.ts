@@ -414,11 +414,13 @@ export function getBlocking(issueId: string): Issue[] {
 /**
  * Get children of an epic
  */
-export function getChildren(epicId: string): Issue[] {
+export function getChildren(epicId: string, includeDeleted = false): Issue[] {
   const events = readEvents();
   const state = computeState(events);
 
-  return Array.from(state.values()).filter((issue) => issue.parent === epicId);
+  return Array.from(state.values()).filter((issue) =>
+    issue.parent === epicId && (includeDeleted || !issue.deleted)
+  );
 }
 
 /**

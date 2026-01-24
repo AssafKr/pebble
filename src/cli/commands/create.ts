@@ -142,6 +142,17 @@ export function createCommand(program: Command): void {
 
         appendEvent(event, pebbleDir);
 
+        // Touch parent's updatedAt when child is added
+        if (parentId) {
+          const parentUpdateEvent: UpdateEvent = {
+            type: 'update',
+            issueId: parentId,
+            timestamp: new Date().toISOString(),
+            data: {},
+          };
+          appendEvent(parentUpdateEvent, pebbleDir);
+        }
+
         // Add dependencies via UpdateEvents
         // --blocked-by: Set this issue's blockedBy array
         if (blockedByIds.length > 0) {

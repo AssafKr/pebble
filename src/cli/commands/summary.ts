@@ -70,6 +70,15 @@ interface InProgressIssue {
   comments: Array<{ text: string; timestamp: string; source?: string }>;
 }
 
+interface ClosedIssue {
+  id: string;
+  title: string;
+  type: string;
+  closedAt: string;
+  lastSource?: string;
+  parent?: { id: string; title: string };
+}
+
 function getIssueComments(issueId: string): Array<{ text: string; timestamp: string; source?: string }> {
   const events = readEvents();
   return events
@@ -100,6 +109,24 @@ function formatInProgressPretty(issues: InProgressIssue[]): string {
       if (issue.comments.length > 3) {
         lines.push(`    (${issue.comments.length - 3} more comment${issue.comments.length - 3 === 1 ? '' : 's'})`);
       }
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+function formatClosedIssuesPretty(issues: ClosedIssue[]): string {
+  if (issues.length === 0) return '';
+
+  const lines: string[] = [];
+  lines.push(`## Recently Closed (${issues.length})`);
+  lines.push('');
+
+  for (const issue of issues) {
+    lines.push(`✓ ${issue.id}: ${issue.title} [${issue.type}]`);
+    lines.push(`  Closed: ${formatRelativeTime(issue.closedAt)}${issue.lastSource ? ` | Source: ${issue.lastSource}` : ''}`);
+    if (issue.parent) {
+      lines.push(`  Parent: ${issue.parent.title}`);
     }
     lines.push('');
   }
@@ -274,6 +301,30 @@ export function summaryCommand(program: Command): void {
         const openSummaries = limitedOpen.map(buildSummary);
         const closedSummaries = limitedClosed.map(buildSummary);
 
+        // Get last 20 closed issues (any type)
+        let closedIssues = getIssues({ status: 'closed' });
+        closedIssues.sort((a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+        closedIssues = closedIssues.slice(0, 20);
+
+        const recentlyClosedSummaries: ClosedIssue[] = closedIssues.map((issue) => {
+          const summary: ClosedIssue = {
+            id: issue.id,
+            title: issue.title,
+            type: issue.type,
+            closedAt: issue.updatedAt,
+            lastSource: issue.lastSource,
+          };
+          if (issue.parent) {
+            const parentIssue = getIssue(issue.parent, true);
+            if (parentIssue) {
+              summary.parent = { id: parentIssue.id, title: parentIssue.title };
+            }
+          }
+          return summary;
+        });
+
         if (pretty) {
           const output: string[] = [];
           // In Progress section first
@@ -289,12 +340,16 @@ export function summaryCommand(program: Command): void {
             if (output.length > 0) output.push('');
             output.push(formatSummaryPretty(closedSummaries, 'Recently Closed Epics (last 72h)'));
           }
+          if (recentlyClosedSummaries.length > 0) {
+            if (output.length > 0) output.push('');
+            output.push(formatClosedIssuesPretty(recentlyClosedSummaries));
+          }
           if (output.length === 0) {
             output.push('No issues in progress and no epics found.');
           }
           console.log(output.join('\n'));
         } else {
-          console.log(formatJson({ inProgress: inProgressSummaries, open: openSummaries, closed: closedSummaries }));
+          console.log(formatJson({ inProgress: inProgressSummaries, open: openSummaries, closed: closedSummaries, recentlyClosed: recentlyClosedSummaries }));
         }
       } catch (error) {
         outputError(error as Error, pretty);

@@ -4,7 +4,6 @@ import { cn } from '../lib/utils';
 import type { Issue, Status, Priority, IssueEvent } from '../../shared/types';
 import {
   STATUS_BADGE_VARIANTS,
-  TYPE_BADGE_VARIANTS,
   PRIORITY_DISPLAY_LABELS,
   STATUSES,
   PRIORITIES,
@@ -644,8 +643,19 @@ export function IssueDetail({
 
         {/* Type badge (read-only) */}
         <div className="flex items-center gap-2">
-          <Badge variant={TYPE_BADGE_VARIANTS[issue.type]}>{issue.type}</Badge>
-          <Badge variant={STATUS_BADGE_VARIANTS[issue.status]}>
+          <Badge className={
+            issue.type === 'epic' ? 'bg-indigo-500 text-white' :
+            issue.type === 'bug' ? 'bg-rose-500 text-white' :
+            issue.type === 'verification' ? 'bg-cyan-500 text-white' :
+            'bg-slate-500 text-white'
+          }>{issue.type}</Badge>
+          <Badge className={
+            issue.status === 'open' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' :
+            issue.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' :
+            issue.status === 'blocked' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200' :
+            issue.status === 'pending_verification' ? 'bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-200' :
+            'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' // closed
+          }>
             {issue.status.replace('_', ' ')}
           </Badge>
         </div>

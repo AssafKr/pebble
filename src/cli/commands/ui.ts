@@ -516,6 +516,18 @@ export function uiCommand(program: Command): void {
             };
 
             appendEvent(event, pebbleDir);
+
+            // Touch parent's updatedAt when child is added
+            if (parent) {
+              const parentUpdateEvent: UpdateEvent = {
+                type: 'update',
+                issueId: parent,
+                timestamp: new Date().toISOString(),
+                data: {},
+              };
+              appendEvent(parentUpdateEvent, pebbleDir);
+            }
+
             const issue = getIssue(issueId);
             const result = parentReopened ? { ...issue, _parentReopened: parentReopened } : issue;
             res.status(201).json(result);
@@ -554,9 +566,9 @@ export function uiCommand(program: Command): void {
                   continue;
                 }
 
-                // Check if epic with open children
-                if (issue.type === 'epic' && hasOpenChildren(issueId)) {
-                  results.push({ id: issueId, success: false, error: 'Cannot close epic with open children' });
+                // Check if issue has open children
+                if (hasOpenChildren(issueId)) {
+                  results.push({ id: issueId, success: false, error: 'Cannot close issue with open children' });
                   continue;
                 }
 
@@ -852,9 +864,9 @@ export function uiCommand(program: Command): void {
               return;
             }
 
-            // Check if epic has open children (single-file mode only)
-            if (!isMultiWorktree() && issue.type === 'epic' && hasOpenChildren(issueId)) {
-              res.status(400).json({ error: 'Cannot close epic with open children' });
+            // Check if issue has open children (single-file mode only)
+            if (!isMultiWorktree() && hasOpenChildren(issueId)) {
+              res.status(400).json({ error: 'Cannot close issue with open children' });
               return;
             }
 

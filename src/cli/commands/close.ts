@@ -48,9 +48,9 @@ export function closeCommand(program: Command): void {
               continue;
             }
 
-            // Check if epic has open children
-            if (issue.type === 'epic' && hasOpenChildren(resolvedId)) {
-              results.push({ id: resolvedId, success: false, error: `Cannot close epic with open children: ${resolvedId}` });
+            // Check if issue has open children
+            if (hasOpenChildren(resolvedId)) {
+              results.push({ id: resolvedId, success: false, error: `Cannot close issue with open children: ${resolvedId}` });
               continue;
             }
 

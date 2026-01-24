@@ -14,7 +14,6 @@ import {
 import type { Issue, IssueEvent } from '../../shared/types';
 import {
   STATUS_BADGE_VARIANTS,
-  TYPE_BADGE_VARIANTS,
   PRIORITY_DISPLAY_LABELS,
 } from '../../shared/types';
 import { formatRelativeTime } from '../../shared/time';
@@ -676,8 +675,13 @@ export function IssueList({
         header: 'Type',
         cell: ({ row }) => {
           if (row.original._isGroup) return null;
-          const type = row.getValue('type') as keyof typeof TYPE_BADGE_VARIANTS;
-          return <Badge variant={TYPE_BADGE_VARIANTS[type]}>{type}</Badge>;
+          const type = row.getValue('type') as string;
+          const colorClass =
+            type === 'epic' ? 'bg-indigo-500 text-white hover:bg-indigo-600' :
+            type === 'bug' ? 'bg-rose-500 text-white hover:bg-rose-600' :
+            type === 'verification' ? 'bg-cyan-500 text-white hover:bg-cyan-600' :
+            'bg-slate-500 text-white hover:bg-slate-600'; // task
+          return <Badge className={colorClass}>{type}</Badge>;
         },
         filterFn: (row, id, value) => {
           return value === '' || row.getValue(id) === value;
@@ -1030,17 +1034,22 @@ export function IssueList({
                 const status = row.original.status;
                 const rowHasOpenBlockers = isGroup ? false : hasOpenBlockers(row.original, issueMap);
                 const statusBorder = isGroup ? 'border-l-4 border-l-gray-400' :
-                  status === 'in_progress' ? 'border-l-4 border-l-blue-500' :
-                  status === 'blocked' || rowHasOpenBlockers ? 'border-l-4 border-l-red-500' :
-                  status === 'pending_verification' ? 'border-l-4 border-l-purple-500' :
-                  status === 'closed' ? 'border-l-4 border-l-green-500' :
-                  '';
+                  status === 'in_progress' ? 'border-l-4 border-l-blue-600' :
+                  status === 'blocked' || rowHasOpenBlockers ? 'border-l-4 border-l-red-600' :
+                  status === 'pending_verification' ? 'border-l-4 border-l-violet-500' :
+                  status === 'closed' ? 'border-l-4 border-l-emerald-500' :
+                  'border-l-4 border-l-amber-400'; // open
                 const isClosedRow = status === 'closed';
-                const isEpic = row.original.type === 'epic' && !isGroup;
+                const issueType = row.original.type;
+                const typeBg = isGroup ? '' :
+                  issueType === 'epic' ? 'bg-indigo-100 dark:bg-indigo-950/40' :
+                  issueType === 'bug' ? 'bg-rose-50 dark:bg-rose-950/30' :
+                  issueType === 'verification' ? 'bg-cyan-50 dark:bg-cyan-950/30' :
+                  '';
                 return (
                 <TableRow
                   key={row.id}
-                  className={`${isGroup ? '' : 'cursor-pointer'} ${statusBorder} ${isClosedRow ? 'bg-muted/30 opacity-75' : ''} ${isGroup ? 'bg-muted/50' : ''} ${isEpic ? 'bg-purple-50 dark:bg-purple-950/20' : ''}`}
+                  className={`${isGroup ? '' : 'cursor-pointer'} ${statusBorder} ${isClosedRow ? 'bg-muted/30 opacity-75' : typeBg} ${isGroup ? 'bg-muted/50' : ''}`}
                   onClick={() => !isGroup && onSelectIssue(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
