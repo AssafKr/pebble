@@ -453,6 +453,7 @@ export function outputIssueWithBlocking(issue: Issue, blocking: Issue[], pretty:
  */
 export interface MutationExtra {
   parentReopened?: { id: string; title: string };
+  blockersReopened?: Array<{ id: string; title: string }>;
 }
 
 /**
@@ -460,8 +461,16 @@ export interface MutationExtra {
  */
 export function outputMutationSuccess(id: string, pretty: boolean, extra?: MutationExtra): void {
   if (pretty) {
+    const notes: string[] = [];
     if (extra?.parentReopened) {
-      console.log(`✓ ${id} (parent ${extra.parentReopened.id} reopened)`);
+      notes.push(`parent ${extra.parentReopened.id} reopened`);
+    }
+    if (extra?.blockersReopened?.length) {
+      const ids = extra.blockersReopened.map(b => b.id).join(', ');
+      notes.push(`blocker${extra.blockersReopened.length > 1 ? 's' : ''} ${ids} reopened`);
+    }
+    if (notes.length > 0) {
+      console.log(`✓ ${id} (${notes.join(', ')})`);
     } else {
       console.log(`✓ ${id}`);
     }
@@ -469,6 +478,9 @@ export function outputMutationSuccess(id: string, pretty: boolean, extra?: Mutat
     const result: Record<string, unknown> = { id, success: true };
     if (extra?.parentReopened) {
       result._parentReopened = extra.parentReopened;
+    }
+    if (extra?.blockersReopened?.length) {
+      result._blockersReopened = extra.blockersReopened;
     }
     console.log(JSON.stringify(result));
   }

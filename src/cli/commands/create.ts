@@ -84,6 +84,7 @@ export function createCommand(program: Command): void {
 
         // Resolve --blocked-by (issues that block this new issue)
         const blockedByIds: string[] = [];
+        const blockersReopened: Array<{ id: string; title: string }> = [];
         if (options.blockedBy) {
           const ids = options.blockedBy.split(',').map((s: string) => s.trim()).filter(Boolean);
           for (const rawId of ids) {
@@ -92,8 +93,16 @@ export function createCommand(program: Command): void {
             if (!blocker) {
               throw new Error(`Blocker issue not found: ${rawId}`);
             }
+            // Auto-reopen closed blocker instead of throwing error
             if (blocker.status === 'closed') {
-              throw new Error(`Cannot be blocked by closed issue: ${resolvedId}`);
+              const reopenEvent: ReopenEvent = {
+                type: 'reopen',
+                issueId: resolvedId,
+                timestamp: new Date().toISOString(),
+                data: { reason: 'Reopened to block new issue' },
+              };
+              appendEvent(reopenEvent, pebbleDir);
+              blockersReopened.push({ id: resolvedId, title: blocker.title });
             }
             blockedByIds.push(resolvedId);
           }
@@ -159,7 +168,10 @@ export function createCommand(program: Command): void {
         }
 
         // Output success
-        outputMutationSuccess(id, pretty, parentReopened ? { parentReopened } : undefined);
+        const extra = (parentReopened || blockersReopened.length > 0)
+          ? { parentReopened, blockersReopened: blockersReopened.length > 0 ? blockersReopened : undefined }
+          : undefined;
+        outputMutationSuccess(id, pretty, extra);
       } catch (error) {
         outputError(error as Error, pretty);
       }
