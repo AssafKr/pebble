@@ -16,6 +16,7 @@ import {
   getVerifications,
   getDescendants,
   getComputedState,
+  getAncestryBlocker,
 } from '../lib/state.js';
 import {
   readEventsFromFile,
@@ -741,11 +742,66 @@ export function uiCommand(program: Command): void {
               updates.priority = priority;
             }
 
+            // Track parents that need to be claimed (for cascade)
+            const cascadeClaim: Array<{ id: string; targetFile: string }> = [];
+
             if (status !== undefined) {
               if (!STATUSES.includes(status)) {
                 res.status(400).json({ error: `Invalid status. Must be one of: ${STATUSES.join(', ')}` });
                 return;
               }
+
+              // Special handling for in_progress: check blockers and cascade to parents
+              if (status === 'in_progress' && issue.status !== 'in_progress') {
+                // Get computed state for blocker checks
+                const state = isMultiWorktree()
+                  ? computeState(issueFiles.flatMap(f => readEventsFromFile(f)))
+                  : getComputedState();
+
+                // Check if issue itself is blocked (exclude deleted blockers)
+                const openBlockers = issue.blockedBy
+                  .map((id) => state.get(id))
+                  .filter((i): i is Issue => i !== undefined && i.status !== 'closed' && !i.deleted);
+
+                if (openBlockers.length > 0) {
+                  const blockerIds = openBlockers.map((b) => b.id).join(', ');
+                  res.status(400).json({
+                    error: `Cannot claim blocked issue. Blocked by: ${blockerIds}`,
+                  });
+                  return;
+                }
+
+                // Check if any ancestor is blocked
+                const ancestryBlocker = getAncestryBlocker(issueId, state);
+                if (ancestryBlocker) {
+                  const blockerIds = ancestryBlocker.blockers.map((b) => b.id).join(', ');
+                  res.status(400).json({
+                    error: `Parent ${ancestryBlocker.blockedAncestor.id} is blocked by: ${blockerIds}`,
+                  });
+                  return;
+                }
+
+                // Collect open parents for cascade
+                let current = issue;
+                while (current.parent) {
+                  const parent = state.get(current.parent);
+                  if (!parent) break;
+
+                  if (parent.status === 'open') {
+                    // Determine target file for this parent
+                    let parentTargetFile = targetFile;
+                    if (isMultiWorktree()) {
+                      const parentFound = findIssueInSources(parent.id, issueFiles);
+                      if (parentFound) {
+                        parentTargetFile = parentFound.targetFile;
+                      }
+                    }
+                    cascadeClaim.push({ id: parent.id, targetFile: parentTargetFile });
+                  }
+                  current = parent;
+                }
+              }
+
               updates.status = status;
             }
 
@@ -820,11 +876,34 @@ export function uiCommand(program: Command): void {
 
             appendEventToFile(event, targetFile);
 
+            // Emit cascade claim events for open parents
+            const cascadeClaimedIds: string[] = [];
+            for (const { id, targetFile: parentTargetFile } of cascadeClaim) {
+              const cascadeEvent: UpdateEvent = {
+                type: 'update',
+                issueId: id,
+                timestamp,
+                data: { status: 'in_progress' },
+              };
+              appendEventToFile(cascadeEvent, parentTargetFile);
+              cascadeClaimedIds.push(id);
+            }
+
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
-              res.json(updated?.issue || { ...issue, ...updates, updatedAt: timestamp });
+              const baseIssue = updated?.issue || { ...issue, ...updates, updatedAt: timestamp };
+              if (cascadeClaimedIds.length > 0) {
+                res.json({ ...baseIssue, _cascadeClaimed: cascadeClaimedIds });
+              } else {
+                res.json(baseIssue);
+              }
             } else {
-              res.json(getIssue(issueId));
+              const updatedIssue = getIssue(issueId);
+              if (cascadeClaimedIds.length > 0) {
+                res.json({ ...updatedIssue, _cascadeClaimed: cascadeClaimedIds });
+              } else {
+                res.json(updatedIssue);
+              }
             }
           } catch (error) {
             res.status(500).json({ error: (error as Error).message });

@@ -6,7 +6,7 @@ import type {
   CommentEvent,
   IssueFilters,
 } from '../../shared/types.js';
-import { readEvents } from './storage.js';
+import { readEvents, appendEvent } from './storage.js';
 
 /**
  * Compute current issue state from a list of events
@@ -570,6 +570,124 @@ export function getAncestryChain(
   }
 
   return chain;
+}
+
+/**
+ * Check if any ancestor in the parent chain is blocked
+ * Returns the first blocked ancestor and its blockers, or null if none blocked
+ */
+export function getAncestryBlocker(
+  issueId: string,
+  state: Map<string, Issue>
+): { blockedAncestor: Issue; blockers: Issue[] } | null {
+  let current = state.get(issueId);
+
+  while (current?.parent) {
+    const parent = state.get(current.parent);
+    if (!parent) break;
+
+    // Check if this parent has open blockers (exclude deleted blockers)
+    const openBlockers = parent.blockedBy
+      .map((id) => state.get(id))
+      .filter((i): i is Issue => i !== undefined && i.status !== 'closed' && !i.deleted);
+
+    if (openBlockers.length > 0) {
+      return { blockedAncestor: parent, blockers: openBlockers };
+    }
+
+    current = parent;
+  }
+
+  return null;
+}
+
+export type ClaimResult =
+  | { success: true; claimedIds: string[] }
+  | { success: false; error: string };
+
+/**
+ * Claim an issue and cascade to all open parents
+ * Validates that neither the issue nor any ancestor is blocked
+ */
+export function claimWithCascade(
+  issueId: string,
+  pebbleDir: string
+): ClaimResult {
+  const events = readEvents();
+  const state = computeState(events);
+  const issue = state.get(issueId);
+
+  // Validate issue exists
+  if (!issue) {
+    return { success: false, error: `Issue not found: ${issueId}` };
+  }
+
+  // Validate not deleted
+  if (issue.deleted) {
+    return { success: false, error: `Cannot claim deleted issue: ${issueId}` };
+  }
+
+  // Validate not closed
+  if (issue.status === 'closed') {
+    return { success: false, error: `Cannot claim closed issue: ${issueId}` };
+  }
+
+  // Check if issue itself is blocked (exclude deleted blockers)
+  const openBlockers = issue.blockedBy
+    .map((id) => state.get(id))
+    .filter((i): i is Issue => i !== undefined && i.status !== 'closed' && !i.deleted);
+
+  if (openBlockers.length > 0) {
+    const blockerIds = openBlockers.map((b) => b.id).join(', ');
+    return {
+      success: false,
+      error: `Cannot claim blocked issue. Blocked by: ${blockerIds}`,
+    };
+  }
+
+  // Check if any ancestor is blocked
+  const ancestryBlocker = getAncestryBlocker(issueId, state);
+  if (ancestryBlocker) {
+    const blockerIds = ancestryBlocker.blockers.map((b) => b.id).join(', ');
+    return {
+      success: false,
+      error: `Parent ${ancestryBlocker.blockedAncestor.id} is blocked by: ${blockerIds}`,
+    };
+  }
+
+  // Collect issues to claim: target + all open ancestors
+  const toClaim: string[] = [];
+
+  // Add target if not already in_progress
+  if (issue.status !== 'in_progress') {
+    toClaim.push(issueId);
+  }
+
+  // Walk up parent chain, add open ancestors
+  let current = issue;
+  while (current.parent) {
+    const parent = state.get(current.parent);
+    if (!parent) break;
+
+    if (parent.status === 'open') {
+      toClaim.push(parent.id);
+    }
+    current = parent;
+  }
+
+  // Emit UpdateEvents for all collected issues
+  const timestamp = new Date().toISOString();
+  for (const id of toClaim) {
+    const event: UpdateEvent = {
+      type: 'update',
+      issueId: id,
+      timestamp,
+      data: { status: 'in_progress' },
+    };
+    appendEvent(event, pebbleDir);
+  }
+
+  return { success: true, claimedIds: toClaim };
 }
 
 /**

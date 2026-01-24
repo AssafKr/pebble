@@ -1,13 +1,19 @@
 import { Command } from 'commander';
-import type { UpdateEvent } from '../../shared/types.js';
-import { getOrCreatePebbleDir, appendEvent } from '../lib/storage.js';
-import { getIssue, resolveId, hasOpenBlockersById, getOpenBlockers } from '../lib/state.js';
-import { outputMutationSuccess, outputError, formatJson } from '../lib/output.js';
+import { getOrCreatePebbleDir } from '../lib/storage.js';
+import { resolveId, claimWithCascade } from '../lib/state.js';
+import { outputError, formatJson } from '../lib/output.js';
+
+interface ClaimResultOutput {
+  id: string;
+  success: boolean;
+  claimedIds?: string[];
+  error?: string;
+}
 
 export function claimCommand(program: Command): void {
   program
     .command('claim <ids...>')
-    .description('Claim issues (set status to in_progress). Supports multiple IDs.')
+    .description('Claim issues (set status to in_progress). Cascades to open parent issues.')
     .action(async (ids: string[]) => {
       const pretty = program.opts().pretty ?? false;
 
@@ -21,47 +27,26 @@ export function claimCommand(program: Command): void {
           throw new Error('No issue IDs provided');
         }
 
-        const results: Array<{ id: string; success: boolean; error?: string }> = [];
+        const results: ClaimResultOutput[] = [];
 
         for (const id of allIds) {
           try {
             const resolvedId = resolveId(id);
-            const issue = getIssue(resolvedId);
+            const result = claimWithCascade(resolvedId, pebbleDir);
 
-            if (!issue) {
-              results.push({ id, success: false, error: `Issue not found: ${id}` });
-              continue;
+            if (result.success) {
+              results.push({
+                id: resolvedId,
+                success: true,
+                claimedIds: result.claimedIds,
+              });
+            } else {
+              results.push({
+                id: resolvedId,
+                success: false,
+                error: result.error,
+              });
             }
-
-            if (issue.status === 'in_progress') {
-              results.push({ id: resolvedId, success: true });
-              continue;
-            }
-
-            if (issue.status === 'closed') {
-              results.push({ id: resolvedId, success: false, error: `Cannot claim closed issue: ${resolvedId}` });
-              continue;
-            }
-
-            // Check if blocked
-            if (hasOpenBlockersById(resolvedId)) {
-              const blockers = getOpenBlockers(resolvedId);
-              const blockerIds = blockers.map(b => b.id).join(', ');
-              results.push({ id: resolvedId, success: false, error: `Cannot claim blocked issue. Blocked by: ${blockerIds}` });
-              continue;
-            }
-
-            const event: UpdateEvent = {
-              type: 'update',
-              issueId: resolvedId,
-              timestamp: new Date().toISOString(),
-              data: {
-                status: 'in_progress',
-              },
-            };
-
-            appendEvent(event, pebbleDir);
-            results.push({ id: resolvedId, success: true });
           } catch (error) {
             results.push({ id, success: false, error: (error as Error).message });
           }
@@ -72,7 +57,20 @@ export function claimCommand(program: Command): void {
           // Single issue - output success or error
           const result = results[0];
           if (result.success) {
-            outputMutationSuccess(result.id, pretty);
+            if (pretty) {
+              const cascaded = result.claimedIds?.filter(cid => cid !== result.id) ?? [];
+              if (cascaded.length > 0) {
+                console.log(`✓ ${result.id} (also claimed: ${cascaded.join(', ')})`);
+              } else {
+                console.log(`✓ ${result.id}`);
+              }
+            } else {
+              console.log(formatJson({
+                id: result.id,
+                success: true,
+                claimedIds: result.claimedIds,
+              }));
+            }
           } else {
             throw new Error(result.error || 'Unknown error');
           }
@@ -81,7 +79,12 @@ export function claimCommand(program: Command): void {
           if (pretty) {
             for (const result of results) {
               if (result.success) {
-                console.log(`✓ ${result.id}`);
+                const cascaded = result.claimedIds?.filter(cid => cid !== result.id) ?? [];
+                if (cascaded.length > 0) {
+                  console.log(`✓ ${result.id} (also claimed: ${cascaded.join(', ')})`);
+                } else {
+                  console.log(`✓ ${result.id}`);
+                }
               } else {
                 console.log(`✗ ${result.id}: ${result.error}`);
               }
@@ -90,6 +93,7 @@ export function claimCommand(program: Command): void {
             console.log(formatJson(results.map(r => ({
               id: r.id,
               success: r.success,
+              ...(r.claimedIds && { claimedIds: r.claimedIds }),
               ...(r.error && { error: r.error }),
             }))));
           }

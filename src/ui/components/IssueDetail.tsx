@@ -153,6 +153,28 @@ export function IssueDetail({
     return blockedByIssues.some((b) => b.status !== 'closed');
   }, [blockedByIssues]);
 
+  // Check if any ancestor is blocked (also prevents setting status to in_progress)
+  const blockedAncestor = useMemo((): { ancestor: Issue; blockers: Issue[] } | null => {
+    let current = issue;
+    while (current.parent) {
+      const parent = issueMap.get(current.parent);
+      if (!parent) break;
+
+      const openBlockers = parent.blockedBy
+        .map((id) => issueMap.get(id))
+        .filter((i): i is Issue => i !== undefined && i.status !== 'closed' && !i.deleted);
+
+      if (openBlockers.length > 0) {
+        return { ancestor: parent, blockers: openBlockers };
+      }
+      current = parent;
+    }
+    return null;
+  }, [issue, issueMap]);
+
+  // Combined check for claim eligibility
+  const cannotClaim = hasOpenBlockers || blockedAncestor !== null;
+
   // Blocking: sorted by dependencies
   const blockingIssues = useMemo(() => {
     const blocked = allIssues.filter((i) => i.blockedBy.includes(issue.id));
@@ -256,8 +278,16 @@ export function IssueDetail({
     if (newStatus === issue.status) return;
     setSavingStatus(true);
     try {
-      await updateIssue(issue.id, { status: newStatus });
-      toast.success('Status updated');
+      const result = await updateIssue(issue.id, { status: newStatus });
+      // Check for cascade claim response
+      const cascaded = (result as { _cascadeClaimed?: string[] })._cascadeClaimed;
+      if (cascaded && cascaded.length > 0) {
+        toast.success('Status updated', {
+          description: `Also started: ${cascaded.join(', ')}`,
+        });
+      } else {
+        toast.success('Status updated');
+      }
       onRefresh?.();
     } catch (err) {
       toast.error('Failed to update status', {
@@ -613,16 +643,23 @@ export function IssueDetail({
               onChange={(e) => handleStatusChange(e.target.value as Status)}
               disabled={savingStatus || issue.status === 'closed' || issue.deleted}
             >
-              {STATUSES.filter((s) => s !== 'closed').map((s) => (
-                <option
-                  key={s}
-                  value={s}
-                  disabled={s === 'in_progress' && hasOpenBlockers}
-                  title={s === 'in_progress' && hasOpenBlockers ? 'Cannot start - has open blockers' : undefined}
-                >
-                  {STATUS_LABELS[s]}{s === 'in_progress' && hasOpenBlockers ? ' (blocked)' : ''}
-                </option>
-              ))}
+              {STATUSES.filter((s) => s !== 'closed').map((s) => {
+                const blockedTitle = s === 'in_progress' && cannotClaim
+                  ? (blockedAncestor
+                    ? `Cannot start - parent ${blockedAncestor.ancestor.id} is blocked by ${blockedAncestor.blockers.map(b => b.id).join(', ')}`
+                    : 'Cannot start - has open blockers')
+                  : undefined;
+                return (
+                  <option
+                    key={s}
+                    value={s}
+                    disabled={s === 'in_progress' && cannotClaim}
+                    title={blockedTitle}
+                  >
+                    {STATUS_LABELS[s]}{s === 'in_progress' && cannotClaim ? ' (blocked)' : ''}
+                  </option>
+                );
+              })}
             </Select>
           </div>
           <div className="space-y-2">
