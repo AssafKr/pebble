@@ -476,7 +476,7 @@ export function uiCommand(program: Command): void {
             }
 
             // Validate parent if provided
-            let parentReopened: { id: string; title: string } | undefined;
+            const parentsReopened: Array<{ id: string; title: string }> = [];
             if (parent) {
               const parentIssue = getIssue(parent);
               if (!parentIssue) {
@@ -487,16 +487,21 @@ export function uiCommand(program: Command): void {
                 res.status(400).json({ error: 'Verification issues cannot be parents' });
                 return;
               }
-              // Auto-reopen closed parent instead of returning error
-              if (parentIssue.status === 'closed') {
-                const reopenEvent: ReopenEvent = {
-                  type: 'reopen',
-                  issueId: parent,
-                  timestamp: new Date().toISOString(),
-                  data: { reason: 'Reopened to add child' },
-                };
-                appendEvent(reopenEvent, pebbleDir);
-                parentReopened = { id: parent, title: parentIssue.title };
+              // Auto-reopen closed ancestors in the entire chain
+              const state = getComputedState();
+              let current = state.get(parent);
+              while (current) {
+                if (current.status === 'closed') {
+                  const reopenEvent: ReopenEvent = {
+                    type: 'reopen',
+                    issueId: current.id,
+                    timestamp: new Date().toISOString(),
+                    data: { reason: 'Reopened to add descendant' },
+                  };
+                  appendEvent(reopenEvent, pebbleDir);
+                  parentsReopened.push({ id: current.id, title: current.title });
+                }
+                current = current.parent ? state.get(current.parent) : undefined;
               }
             }
 
@@ -530,7 +535,7 @@ export function uiCommand(program: Command): void {
             }
 
             const issue = getIssue(issueId);
-            const result = parentReopened ? { ...issue, _parentReopened: parentReopened } : issue;
+            const result = parentsReopened.length > 0 ? { ...issue, _parentsReopened: parentsReopened } : issue;
             res.status(201).json(result);
           } catch (error) {
             res.status(500).json({ error: (error as Error).message });

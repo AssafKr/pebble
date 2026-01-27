@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import type { Priority, Status, UpdateEvent, ReopenEvent } from '../../shared/types.js';
 import { PRIORITIES, STATUSES } from '../../shared/types.js';
 import { getOrCreatePebbleDir, appendEvent } from '../lib/storage.js';
-import { getIssue, resolveId, hasOpenBlockersById, getOpenBlockers } from '../lib/state.js';
+import { getIssue, resolveId, hasOpenBlockersById, getOpenBlockers, getComputedState } from '../lib/state.js';
 import { outputMutationSuccess, outputError, formatJson } from '../lib/output.js';
 
 export function updateCommand(program: Command): void {
@@ -59,8 +59,8 @@ export function updateCommand(program: Command): void {
           hasChanges = true;
         }
 
-        // Track if we need to reopen a parent
-        let parentReopened: { id: string; title: string } | undefined;
+        // Track parents reopened in ancestry chain
+        const parentsReopened: Array<{ id: string; title: string }> = [];
 
         if (options.parent !== undefined) {
           if (options.parent.toLowerCase() === 'null') {
@@ -76,16 +76,21 @@ export function updateCommand(program: Command): void {
             if (parentIssue.type === 'verification') {
               throw new Error(`Verification issues cannot be parents`);
             }
-            // Auto-reopen closed parent instead of throwing error
-            if (parentIssue.status === 'closed') {
-              const reopenEvent: ReopenEvent = {
-                type: 'reopen',
-                issueId: parentId,
-                timestamp: new Date().toISOString(),
-                data: { reason: 'Reopened to add child' },
-              };
-              appendEvent(reopenEvent, pebbleDir);
-              parentReopened = { id: parentId, title: parentIssue.title };
+            // Auto-reopen closed ancestors in the entire chain
+            const state = getComputedState();
+            let current = state.get(parentId);
+            while (current) {
+              if (current.status === 'closed') {
+                const reopenEvent: ReopenEvent = {
+                  type: 'reopen',
+                  issueId: current.id,
+                  timestamp: new Date().toISOString(),
+                  data: { reason: 'Reopened to add descendant' },
+                };
+                appendEvent(reopenEvent, pebbleDir);
+                parentsReopened.push({ id: current.id, title: current.title });
+              }
+              current = current.parent ? state.get(current.parent) : undefined;
             }
             data.parent = parentId;
           }
@@ -135,7 +140,7 @@ export function updateCommand(program: Command): void {
           // Single issue - output success or error
           const result = results[0];
           if (result.success) {
-            outputMutationSuccess(result.id, pretty, parentReopened ? { parentReopened } : undefined);
+            outputMutationSuccess(result.id, pretty, parentsReopened.length > 0 ? { parentsReopened } : undefined);
           } else {
             throw new Error(result.error || 'Unknown error');
           }

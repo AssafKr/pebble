@@ -452,7 +452,7 @@ export function outputIssueWithBlocking(issue: Issue, blocking: Issue[], pretty:
  * Extra info that can be included in mutation responses
  */
 export interface MutationExtra {
-  parentReopened?: { id: string; title: string };
+  parentsReopened?: Array<{ id: string; title: string }>;
   blockersReopened?: Array<{ id: string; title: string }>;
 }
 
@@ -462,8 +462,9 @@ export interface MutationExtra {
 export function outputMutationSuccess(id: string, pretty: boolean, extra?: MutationExtra): void {
   if (pretty) {
     const notes: string[] = [];
-    if (extra?.parentReopened) {
-      notes.push(`parent ${extra.parentReopened.id} reopened`);
+    if (extra?.parentsReopened?.length) {
+      const ids = extra.parentsReopened.map(p => p.id).join(', ');
+      notes.push(`reopened: ${ids}`);
     }
     if (extra?.blockersReopened?.length) {
       const ids = extra.blockersReopened.map(b => b.id).join(', ');
@@ -476,8 +477,8 @@ export function outputMutationSuccess(id: string, pretty: boolean, extra?: Mutat
     }
   } else {
     const result: Record<string, unknown> = { id, success: true };
-    if (extra?.parentReopened) {
-      result._parentReopened = extra.parentReopened;
+    if (extra?.parentsReopened?.length) {
+      result._parentsReopened = extra.parentsReopened;
     }
     if (extra?.blockersReopened?.length) {
       result._blockersReopened = extra.blockersReopened;
