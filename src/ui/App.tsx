@@ -74,7 +74,7 @@ function AppContent() {
   const [commentsSearchFilter, setCommentsSearchFilter] = useState('');
 
   // Get all potential parents for the create form parent selector
-  const parentCandidates = useMemo(() => issues, [issues]);
+  const parentCandidates = issues;
 
   // Close detail panel when view changes
   const handleViewChange = (newView: View) => {
