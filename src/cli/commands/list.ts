@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import type { IssueType, Priority, Status, IssueFilters } from '../../shared/types.js';
 import { ISSUE_TYPES, PRIORITIES, STATUSES, STATUS_LABELS } from '../../shared/types.js';
 import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getIssues, resolveId, getBlocking, getChildren, getVerifications, getComputedState, getAncestryChain } from '../lib/state.js';
+import { getIssues, resolveId, getBlocking, getChildren, getComputedState, getAncestryChain } from '../lib/state.js';
 import { outputIssueList, outputIssueListVerbose, outputIssueTree, outputError, type VerboseIssueInfo, type LimitInfo } from '../lib/output.js';
 
 export function listCommand(program: Command): void {
@@ -13,7 +13,7 @@ export function listCommand(program: Command): void {
     .option('-t, --type <type>', 'Filter by type')
     .option('--priority <priority>', 'Filter by priority')
     .option('--parent <id>', 'Filter by parent epic')
-    .option('-v, --verbose', 'Show expanded details (parent, children, blocking, verifications)')
+    .option('-v, --verbose', 'Show expanded details (parent, children, blocking)')
     .option('--flat', 'Show flat list instead of hierarchical tree')
     .option('--limit <n>', 'Max issues to return (default: 30)')
     .option('--all', 'Show all issues (no limit)')
@@ -82,7 +82,6 @@ export function listCommand(program: Command): void {
               issue,
               blocking: getBlocking(issue.id).map((i) => i.id),
               children: getChildren(issue.id).length,
-              verifications: getVerifications(issue.id).length,
               ancestry: getAncestryChain(issue.id, state),
             };
           });

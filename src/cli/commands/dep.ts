@@ -20,9 +20,17 @@ export function depCommand(program: Command): void {
   // dep add <id> [blocker-id] --needs <id> --blocks <id>
   dep
     .command('add <id> [blockerId]')
-    .description('Add a blocking dependency. Use --needs or --blocks for self-documenting syntax.')
+    .description('Add a blocking dependency: <id> is blocked by [blockerId]')
     .option('--needs <id>', 'Issue that must be completed first (first arg needs this)')
     .option('--blocks <id>', 'Issue that this blocks (first arg blocks this)')
+    .addHelpText('after', `
+Examples:
+  pb dep add B A            B is blocked by A (A must close before B is ready)
+  pb dep add B --needs A    Same as above, self-documenting
+  pb dep add A --blocks B   Same effect: B is blocked by A
+
+Think: "B needs A" → pb dep add B A
+`)
     .action(async (id: string, blockerId: string | undefined, options: { needs?: string; blocks?: string }) => {
       const pretty = program.opts().pretty ?? false;
 
@@ -306,7 +314,7 @@ export function depCommand(program: Command): void {
   // dep tree <id>
   dep
     .command('tree <id>')
-    .description('Show issue tree (children, verifications, and full hierarchy)')
+    .description('Show issue tree (children and full hierarchy)')
     .action(async (id: string) => {
       const pretty = program.opts().pretty ?? false;
 
@@ -358,7 +366,7 @@ function buildIssueTree(
   const buildChildren = (id: string, visited: Set<string>): IssueTreeNode[] => {
     const children: IssueTreeNode[] = [];
     for (const [, i] of state) {
-      if ((i.parent === id || i.verifies === id) && !visited.has(i.id)) {
+      if (i.parent === id && !visited.has(i.id)) {
         visited.add(i.id);
         const nodeChildren = buildChildren(i.id, visited);
         children.push({
@@ -401,7 +409,7 @@ function buildIssueTree(
     // Create parent node with current as child, plus any siblings
     const siblings: IssueTreeNode[] = [];
     for (const [, i] of state) {
-      if ((i.parent === parentIssue.id || i.verifies === parentIssue.id) && i.id !== currentIssue.id) {
+      if (i.parent === parentIssue.id && i.id !== currentIssue.id) {
         // Add sibling (but don't expand its children to keep output focused)
         siblings.push({
           id: i.id,
@@ -441,7 +449,7 @@ function formatIssueTreePretty(node: IssueTreeNode | null): string {
 
   const formatNode = (n: IssueTreeNode, prefix: string, isLast: boolean, isRoot: boolean): void => {
     const connector = isRoot ? '' : isLast ? '└─ ' : '├─ ';
-    const statusIcon = n.status === 'closed' ? '✓' : n.status === 'in_progress' ? '▶' : n.status === 'pending_verification' ? '⏳' : '○';
+    const statusIcon = n.status === 'closed' ? '✓' : n.status === 'in_progress' ? '▶' : '○';
     const marker = n.isTarget ? ' ◀' : '';
 
     lines.push(`${prefix}${connector}${statusIcon} ${n.id}: ${n.title} [${n.type}] P${n.priority}${marker}`);

@@ -161,13 +161,12 @@ export function formatIssuePrettyWithBlocking(issue: Issue, blocking: Issue[]): 
 export interface IssueDetailContext {
   blocking: Issue[];
   children: Issue[];
-  verifications: Issue[];
   related: Issue[];
   ancestry?: Array<{ id: string; title: string }>; // Full parent chain
 }
 
 /**
- * Format an issue with full context (children, verifications, related)
+ * Format an issue with full context (children, related)
  */
 export function formatIssueDetailPretty(issue: Issue, ctx: IssueDetailContext): string {
   const lines: string[] = [];
@@ -196,10 +195,8 @@ export function formatIssueDetailPretty(issue: Issue, ctx: IssueDetailContext): 
   // Children (for epics)
   if (ctx.children.length > 0) {
     const closedChildren = ctx.children.filter(c => c.status === 'closed');
-    const pendingChildren = ctx.children.filter(c => c.status === 'pending_verification');
-    const pendingStr = pendingChildren.length > 0 ? ` (${pendingChildren.length} pending verification)` : '';
     lines.push('');
-    lines.push(`Children (${closedChildren.length}/${ctx.children.length} done${pendingStr}):`);
+    lines.push(`Children (${closedChildren.length}/${ctx.children.length} done):`);
     for (const child of ctx.children) {
       const statusIcon = child.status === 'closed' ? '✓' : child.status === 'in_progress' ? '▶' : '○';
       lines.push(`  ${statusIcon} ${child.id} - ${child.title} [${child.status}]`);
@@ -216,20 +213,6 @@ export function formatIssueDetailPretty(issue: Issue, ctx: IssueDetailContext): 
   if (ctx.blocking.length > 0) {
     lines.push('');
     lines.push(`Blocking: ${ctx.blocking.map(i => i.id).join(', ')}`);
-  }
-
-  // Verifications (especially important for pending_verification status)
-  if (ctx.verifications.length > 0) {
-    const closedVerifications = ctx.verifications.filter(v => v.status === 'closed');
-    lines.push('');
-    lines.push(`Verifications (${closedVerifications.length}/${ctx.verifications.length} done):`);
-    for (const v of ctx.verifications) {
-      const statusIcon = v.status === 'closed' ? '✓' : '○';
-      lines.push(`  ${statusIcon} ${v.id} - ${v.title} [${v.status}]`);
-    }
-  } else if (issue.status === 'pending_verification') {
-    lines.push('');
-    lines.push('Verifications: None found (status may be stale)');
   }
 
   // Related issues
@@ -268,7 +251,6 @@ export function outputIssueDetail(issue: Issue, ctx: IssueDetailContext, pretty:
       ...issue,
       blocking: ctx.blocking.map(i => i.id),
       children: ctx.children.map(i => ({ id: i.id, title: i.title, status: i.status })),
-      verifications: ctx.verifications.map(i => ({ id: i.id, title: i.title, status: i.status })),
       related: ctx.related.map(i => i.id),
       ...(ctx.ancestry && ctx.ancestry.length > 0 && { ancestry: ctx.ancestry }),
     };
@@ -585,7 +567,7 @@ export function formatIssueTreePretty(nodes: IssueTreeNode[], sectionHeader?: st
 
   const formatNode = (node: IssueTreeNode, prefix: string, isLast: boolean, isRoot: boolean): void => {
     const connector = isRoot ? '' : isLast ? '└─ ' : '├─ ';
-    const statusIcon = node.status === 'closed' ? '✓' : node.status === 'in_progress' ? '▶' : node.status === 'pending_verification' ? '⏳' : '○';
+    const statusIcon = node.status === 'closed' ? '✓' : node.status === 'in_progress' ? '▶' : '○';
     const statusText = STATUS_LABELS[node.status as Status].toLowerCase();
     const relativeTime = node.statusChangedAt ? formatRelativeTime(node.statusChangedAt) : formatRelativeTime(node.createdAt);
 
@@ -649,7 +631,6 @@ export interface VerboseIssueInfo {
   issue: Issue;
   blocking: string[];
   children: number;
-  verifications: number;
   blockers?: string[]; // For blocked command: open blockers
   ancestry: Array<{ id: string; title: string }>; // Full parent chain (parent → grandparent → root)
 }
@@ -671,7 +652,7 @@ export function formatIssueListVerbose(issues: VerboseIssueInfo[], sectionHeader
   }
 
   for (const info of issues) {
-    const { issue, blocking, children, verifications, blockers, ancestry } = info;
+    const { issue, blocking, children, blockers, ancestry } = info;
 
     const statusTime = issue.statusChangedAt ? formatRelativeTime(issue.statusChangedAt) : formatRelativeTime(issue.createdAt);
     lines.push(`${issue.id}: ${issue.title}`);
@@ -691,9 +672,9 @@ export function formatIssueListVerbose(issues: VerboseIssueInfo[], sectionHeader
       lines.push(`  Blocked by: ${blockers.join(', ')}`);
     }
 
-    // Show children/verifications for epics
+    // Show children count for epics
     if (issue.type === 'epic' && children > 0) {
-      lines.push(`  Children: ${children} | Verifications: ${verifications}`);
+      lines.push(`  Children: ${children}`);
     }
 
     lines.push('');
@@ -713,11 +694,10 @@ export function outputIssueListVerbose(issues: VerboseIssueInfo[], pretty: boole
     }
   } else {
     // JSON output includes all fields
-    const output = issues.map(({ issue, blocking, children, verifications, blockers, ancestry }) => ({
+    const output = issues.map(({ issue, blocking, children, blockers, ancestry }) => ({
       ...issue,
       blocking,
       childrenCount: issue.type === 'epic' ? children : undefined,
-      verificationsCount: verifications,
       ...(blockers && { openBlockers: blockers }),
       ...(ancestry.length > 0 && { ancestry }),
     }));

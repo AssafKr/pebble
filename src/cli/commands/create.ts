@@ -10,31 +10,25 @@ export function createCommand(program: Command): void {
   program
     .command('create <title>')
     .description('Create a new issue')
-    .option('-t, --type <type>', 'Issue type (task, bug, epic, verification)', 'task')
+    .option('-t, --type <type>', 'Issue type (task, bug, epic)', 'task')
     .option('-p, --priority <priority>', 'Priority (0-4)', '2')
     .option('-d, --description <desc>', 'Description')
     .option('--parent <id>', 'Parent issue ID')
-    .option('--verifies <id>', 'ID of issue this verifies (sets type to verification)')
     .option('--blocked-by <ids>', 'Comma-separated IDs of issues that block this one')
     .option('--blocks <ids>', 'Comma-separated IDs of issues this one will block')
+    .addHelpText('after', `
+Notes:
+  IDs support partial matching (e.g., "abc" matches "PROJ-abc123")
+  Creating a child under a closed parent auto-reopens the parent chain
+`)
     .action(async (title: string, options) => {
       const pretty = program.opts().pretty ?? false;
 
       try {
-        // Auto-set type to verification if --verifies is used
-        let type = options.type as IssueType;
-        if (options.verifies && type !== 'verification') {
-          type = 'verification';
-        }
-
         // Validate type
+        const type = options.type as IssueType;
         if (!ISSUE_TYPES.includes(type)) {
           throw new Error(`Invalid type: ${type}. Must be one of: ${ISSUE_TYPES.join(', ')}`);
-        }
-
-        // Validate --verifies is only used with verification type
-        if (type === 'verification' && !options.verifies) {
-          throw new Error('Verification issues require --verifies <id> to specify the issue being verified');
         }
 
         // Validate priority
@@ -56,9 +50,6 @@ export function createCommand(program: Command): void {
           if (!parent) {
             throw new Error(`Parent issue not found: ${options.parent}`);
           }
-          if (parent.type === 'verification') {
-            throw new Error(`Verification issues cannot be parents`);
-          }
           // Auto-reopen closed ancestors in the entire chain
           const state = getComputedState();
           let current = state.get(parentId);
@@ -74,16 +65,6 @@ export function createCommand(program: Command): void {
               parentsReopened.push({ id: current.id, title: current.title });
             }
             current = current.parent ? state.get(current.parent) : undefined;
-          }
-        }
-
-        // Resolve verifies if provided
-        let verifiesId: string | undefined;
-        if (options.verifies) {
-          verifiesId = resolveId(options.verifies);
-          const target = getIssue(verifiesId);
-          if (!target) {
-            throw new Error(`Target issue not found: ${options.verifies}`);
           }
         }
 
@@ -141,7 +122,6 @@ export function createCommand(program: Command): void {
             priority,
             description: options.description,
             parent: parentId,
-            verifies: verifiesId,
           },
         };
 

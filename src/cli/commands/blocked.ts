@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getBlocked, getBlocking, getChildren, getVerifications, getBlockers, getComputedState, getAncestryChain } from '../lib/state.js';
+import { getBlocked, getBlocking, getChildren, getBlockers, getComputedState, getAncestryChain } from '../lib/state.js';
 import { outputIssueList, outputIssueListVerbose, outputError, type VerboseIssueInfo, type LimitInfo } from '../lib/output.js';
 
 export function blockedCommand(program: Command): void {
@@ -50,7 +50,6 @@ export function blockedCommand(program: Command): void {
               issue,
               blocking: getBlocking(issue.id).map((i) => i.id),
               children: getChildren(issue.id).length,
-              verifications: getVerifications(issue.id).length,
               blockers: openBlockers,
               ancestry: getAncestryChain(issue.id, state),
             };

@@ -29,11 +29,11 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { Button } from './ui/button';
-import { ArrowUpDown, ChevronRight, ChevronDown, Folder, FolderOpen, Search, Trash2, X } from 'lucide-react';
+import { ArrowUpDown, ChevronRight, ChevronDown, Folder, FolderOpen, Trash2, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getCommonPrefix, getRelativePath } from '../lib/path';
 
-export type FilterPreset = 'ready' | 'blocked' | 'in_progress' | 'all_open' | 'verifications' | null;
+export type FilterPreset = 'ready' | 'blocked' | 'in_progress' | 'all_open' | null;
 import { getStatusOrder } from '../lib/sort';
 
 export interface IssueListProps {
@@ -85,50 +85,31 @@ function countOpenBlockers(issue: Issue, issueMap: Map<string, Issue>): number {
 }
 
 // Build hierarchical data: supports unlimited nesting depth
-// Also nests verification issues under their target issues
 function buildHierarchy(issues: Issue[]): IssueWithChildren[] {
   const issueMap = new Map(issues.map((i) => [i.id, i]));
   const childrenByParent = new Map<string, Issue[]>();
-  const verificationsByTarget = new Map<string, Issue[]>();
 
-  // Group children by parent and verifications by target
+  // Group children by parent
   for (const issue of issues) {
     if (issue.parent && issueMap.has(issue.parent)) {
       const children = childrenByParent.get(issue.parent) || [];
       children.push(issue);
       childrenByParent.set(issue.parent, children);
     }
-    // Group verification issues by their target (separate from parent-child)
-    if (issue.type === 'verification' && issue.verifies && issueMap.has(issue.verifies)) {
-      const verifications = verificationsByTarget.get(issue.verifies) || [];
-      verifications.push(issue);
-      verificationsByTarget.set(issue.verifies, verifications);
-    }
   }
 
   // Recursively build hierarchy for an issue
   function buildIssueWithChildren(issue: Issue): IssueWithChildren {
     const children = childrenByParent.get(issue.id) || [];
-    const verifications = verificationsByTarget.get(issue.id) || [];
 
     // Sort children: open issues first (by status), closed at bottom
     const sortedChildren = [...children].sort((a, b) => {
       return getStatusOrder(a.status) - getStatusOrder(b.status);
     });
 
-    // Sort verifications: open first, then by status
-    const sortedVerifications = [...verifications].sort((a, b) => {
-      return getStatusOrder(a.status) - getStatusOrder(b.status);
-    });
-
-    // Recursively build children's children (but NOT verifications - they don't nest further)
-    const childSubRows = sortedChildren.map(child => buildIssueWithChildren(child));
-    // Verifications are leaf nodes (no further nesting)
-    const verificationSubRows = sortedVerifications.map(v => ({ ...v, subRows: undefined }));
-
-    // Combine: children first, then verifications
-    const allSubRows = [...childSubRows, ...verificationSubRows];
-    const subRows = allSubRows.length > 0 ? allSubRows : undefined;
+    // Recursively build children's children
+    const subRowsList = sortedChildren.map(child => buildIssueWithChildren(child));
+    const subRows = subRowsList.length > 0 ? subRowsList : undefined;
 
     return {
       ...issue,
@@ -137,17 +118,12 @@ function buildHierarchy(issues: Issue[]): IssueWithChildren[] {
   }
 
   // Build top level (issues without parents or with missing parents)
-  // Also exclude verification issues that have a valid target (they're nested under it)
   const epicsAndParents: IssueWithChildren[] = [];
   const orphans: IssueWithChildren[] = [];
 
   for (const issue of issues) {
     // Skip if this issue has a valid parent (it will be nested under parent)
     if (issue.parent && issueMap.has(issue.parent)) {
-      continue;
-    }
-    // Skip verification issues that have a valid target (they're nested under target)
-    if (issue.type === 'verification' && issue.verifies && issueMap.has(issue.verifies)) {
       continue;
     }
 
@@ -387,11 +363,6 @@ export function IssueList({
         case 'ready': {
           if (issue.status === 'closed') return false;
           if (hasBlockers) return false;
-          // For verification issues, target must be closed
-          if (issue.type === 'verification' && issue.verifies) {
-            const target = issueMap.get(issue.verifies);
-            if (!target || target.status !== 'closed') return false;
-          }
           return true;
         }
         case 'blocked':
@@ -400,8 +371,6 @@ export function IssueList({
           return issue.status === 'in_progress';
         case 'all_open':
           return issue.status !== 'closed';
-        case 'verifications':
-          return issue.type === 'verification';
         default:
           return true;
       }
@@ -564,49 +533,28 @@ export function IssueList({
             return null;
           }
           const blockerCount = countOpenBlockers(row.original, issueMap);
-          // Count all descendants, separating regular children from verifications
+          // Count all descendants
           const countDescendants = (subRows: IssueWithChildren[] | undefined): {
             total: number;
             closed: number;
-            pendingVerification: number;
-            verificationTotal: number;
-            verificationClosed: number;
           } => {
             if (!subRows || subRows.length === 0) {
-              return { total: 0, closed: 0, pendingVerification: 0, verificationTotal: 0, verificationClosed: 0 };
+              return { total: 0, closed: 0 };
             }
             let total = 0;
             let closed = 0;
-            let pendingVerification = 0;
-            let verificationTotal = 0;
-            let verificationClosed = 0;
             for (const child of subRows) {
-              if (child.type === 'verification') {
-                verificationTotal += 1;
-                if (child.status === 'closed') verificationClosed += 1;
-              } else {
-                total += 1;
-                if (child.status === 'closed') closed += 1;
-                else if (child.status === 'pending_verification') pendingVerification += 1;
-              }
+              total += 1;
+              if (child.status === 'closed') closed += 1;
               // Recursively count grandchildren
               const grandchildren = countDescendants(child.subRows);
               total += grandchildren.total;
               closed += grandchildren.closed;
-              pendingVerification += grandchildren.pendingVerification;
-              verificationTotal += grandchildren.verificationTotal;
-              verificationClosed += grandchildren.verificationClosed;
             }
-            return { total, closed, pendingVerification, verificationTotal, verificationClosed };
+            return { total, closed };
           };
-          const { total: childCount, closed: closedCount, pendingVerification: pendingCount, verificationTotal, verificationClosed } = countDescendants(row.original.subRows);
+          const { total: childCount, closed: closedCount } = countDescendants(row.original.subRows);
           const allDone = childCount > 0 && closedCount === childCount;
-          const allVerified = verificationTotal > 0 && verificationClosed === verificationTotal;
-          // Check if this is a verification issue
-          const isVerification = row.original.type === 'verification';
-          const verifiesId = row.original.verifies;
-          const verifiesIssue = verifiesId ? issueMap.get(verifiesId) : undefined;
-          const verifiesReady = verifiesIssue?.status === 'closed';
           const isDeleted = row.original.deleted;
           return (
             <div className={cn("flex items-center gap-2", isDeleted && "opacity-60")}>
@@ -617,48 +565,13 @@ export function IssueList({
                   Deleted
                 </span>
               )}
-              {/* Verification indicator */}
-              {isVerification && verifiesId && (
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded flex items-center gap-1 ${
-                    verifiesReady
-                      ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                  }`}
-                  title={verifiesReady ? 'Target closed - ready to verify' : 'Waiting for target to close'}
-                >
-                  <Search className="h-3 w-3" />
-                  {verifiesIssue ? (
-                    <button
-                      className="hover:underline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectIssue(verifiesIssue);
-                      }}
-                    >
-                      {verifiesId}
-                    </button>
-                  ) : (
-                    <span>{verifiesId}</span>
-                  )}
-                </span>
-              )}
               {childCount > 0 && (
                 <span className={`text-xs px-1.5 py-0.5 rounded ${
                   allDone
                     ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
                     : 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400'
                 }`}>
-                  {closedCount}/{childCount} done{pendingCount > 0 && ` (${pendingCount} pending verification)`}
-                </span>
-              )}
-              {verificationTotal > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded ${
-                  allVerified
-                    ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
-                    : 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400'
-                }`}>
-                  {verificationClosed}/{verificationTotal} verification{verificationTotal === 1 ? '' : 's'}
+                  {closedCount}/{childCount} done
                 </span>
               )}
               {blockerCount > 0 && (
@@ -679,7 +592,6 @@ export function IssueList({
           const colorClass =
             type === 'epic' ? 'bg-indigo-500 text-white hover:bg-indigo-600' :
             type === 'bug' ? 'bg-rose-500 text-white hover:bg-rose-600' :
-            type === 'verification' ? 'bg-cyan-500 text-white hover:bg-cyan-600' :
             'bg-slate-500 text-white hover:bg-slate-600'; // task
           return <Badge className={colorClass}>{type}</Badge>;
         },
@@ -904,14 +816,6 @@ export function IssueList({
         >
           All Open
         </Button>
-        <Button
-          variant={activePreset === 'verifications' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => handlePresetClick('verifications')}
-          className={cn(activePreset === 'verifications' && 'bg-cyan-600 hover:bg-cyan-700')}
-        >
-          Verifications
-        </Button>
         {activePreset && (
           <Button
             variant="ghost"
@@ -962,7 +866,6 @@ export function IssueList({
           <option value="task">Task</option>
           <option value="bug">Bug</option>
           <option value="epic">Epic</option>
-          <option value="verification">Verification</option>
         </Select>
         <Select
           value={(table.getColumn('priority')?.getFilterValue() as string) ?? ''}
@@ -1036,7 +939,6 @@ export function IssueList({
                 const statusBorder = isGroup ? 'border-l-4 border-l-gray-400' :
                   status === 'in_progress' ? 'border-l-4 border-l-blue-600' :
                   status === 'blocked' || rowHasOpenBlockers ? 'border-l-4 border-l-red-600' :
-                  status === 'pending_verification' ? 'border-l-4 border-l-violet-500' :
                   status === 'closed' ? 'border-l-4 border-l-emerald-500' :
                   'border-l-4 border-l-amber-400'; // open
                 const isClosedRow = status === 'closed';
@@ -1046,7 +948,6 @@ export function IssueList({
                   isClosedRow ? 'bg-muted/30' :
                   issueType === 'epic' ? 'bg-indigo-100 dark:bg-indigo-950/40' :
                   issueType === 'bug' ? 'bg-rose-50 dark:bg-rose-950/30' :
-                  issueType === 'verification' ? 'bg-cyan-50 dark:bg-cyan-950/30' :
                   'bg-surface';
                 return (
                 <TableRow

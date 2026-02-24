@@ -1,15 +1,15 @@
 import { Command } from 'commander';
 import { ISSUE_TYPES, type IssueType } from '../../shared/types.js';
 import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getReady, getBlocking, getChildren, getVerifications, getComputedState, getAncestryChain } from '../lib/state.js';
+import { getReady, getBlocking, getChildren, getComputedState, getAncestryChain } from '../lib/state.js';
 import { outputIssueList, outputIssueListVerbose, outputError, type VerboseIssueInfo, type LimitInfo } from '../lib/output.js';
 
 export function readyCommand(program: Command): void {
   program
     .command('ready')
     .description('Show issues ready for work (no open blockers)')
-    .option('-v, --verbose', 'Show expanded details (parent, children, blocking, verifications)')
-    .option('-t, --type <type>', 'Filter by type: task, bug, epic, verification')
+    .option('-v, --verbose', 'Show expanded details (parent, children, blocking)')
+    .option('-t, --type <type>', 'Filter by type: task, bug, epic')
     .option('--limit <n>', 'Max issues to return (default: 30)')
     .option('--all', 'Show all issues (no limit)')
     .action(async (options) => {
@@ -55,7 +55,6 @@ export function readyCommand(program: Command): void {
               issue,
               blocking: getBlocking(issue.id).map((i) => i.id),
               children: getChildren(issue.id).length,
-              verifications: getVerifications(issue.id).length,
               ancestry: getAncestryChain(issue.id, state),
             };
           });

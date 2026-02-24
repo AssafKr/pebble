@@ -2,14 +2,13 @@ import { Command } from 'commander';
 import type { Status, CommentEvent } from '../../shared/types.js';
 import { STATUSES, STATUS_LABELS } from '../../shared/types.js';
 import { getOrCreatePebbleDir, readEvents } from '../lib/storage.js';
-import { getIssues, getChildren, getIssue, getVerifications } from '../lib/state.js';
+import { getIssues, getChildren, getIssue } from '../lib/state.js';
 import { outputError, formatJson } from '../lib/output.js';
 import { formatRelativeTime } from '../../shared/time.js';
 
 interface ChildCounts {
   total: number;
   done: number;
-  pending_verification: number;
   in_progress: number;
   open: number;
   blocked: number;
@@ -27,10 +26,6 @@ interface EpicSummary {
     title: string;
   };
   children: ChildCounts;
-  verifications: {
-    total: number;
-    done: number;
-  };
 }
 
 function countChildren(epicId: string): ChildCounts {
@@ -38,25 +33,10 @@ function countChildren(epicId: string): ChildCounts {
   return {
     total: children.length,
     done: children.filter((c) => c.status === 'closed').length,
-    pending_verification: children.filter((c) => c.status === 'pending_verification').length,
     in_progress: children.filter((c) => c.status === 'in_progress').length,
     open: children.filter((c) => c.status === 'open').length,
     blocked: children.filter((c) => c.status === 'blocked').length,
   };
-}
-
-function countVerifications(epicId: string): { total: number; done: number } {
-  const children = getChildren(epicId);
-  let total = 0;
-  let done = 0;
-
-  for (const child of children) {
-    const verifications = getVerifications(child.id);
-    total += verifications.length;
-    done += verifications.filter((v) => v.status === 'closed').length;
-  }
-
-  return { total, done };
 }
 
 interface InProgressIssue {
@@ -145,7 +125,7 @@ function formatSummaryPretty(summaries: EpicSummary[], sectionHeader: string): s
   lines.push('');
 
   for (const summary of summaries) {
-    const { children, verifications } = summary;
+    const { children } = summary;
 
     // Epic line: ID: Title
     lines.push(`${summary.id}: ${summary.title}`);
@@ -154,10 +134,7 @@ function formatSummaryPretty(summaries: EpicSummary[], sectionHeader: string): s
     lines.push(`  Created: ${formatRelativeTime(summary.createdAt)} | Updated: ${formatRelativeTime(summary.updatedAt)}`);
 
     // Counts
-    const pendingStr = children.pending_verification > 0 ? ` (${children.pending_verification} pending verification)` : '';
-    const issueCount = `Issues: ${children.done}/${children.total} done${pendingStr}`;
-    const verifCount = `Verifications: ${verifications.done}/${verifications.total} done`;
-    lines.push(`  ${issueCount} | ${verifCount}`);
+    lines.push(`  Issues: ${children.done}/${children.total} done`);
 
     // Parent if exists
     if (summary.parent) {
@@ -204,7 +181,6 @@ export function summaryCommand(program: Command): void {
             createdAt: epic.createdAt,
             updatedAt: epic.updatedAt,
             children: countChildren(epic.id),
-            verifications: countVerifications(epic.id),
           };
 
           if (epic.parent) {

@@ -13,7 +13,6 @@ import {
   hasOpenChildren,
   detectCycle,
   computeState,
-  getVerifications,
   getDescendants,
   getComputedState,
   getAncestryBlocker,
@@ -483,10 +482,6 @@ export function uiCommand(program: Command): void {
                 res.status(400).json({ error: `Parent issue not found: ${parent}` });
                 return;
               }
-              if (parentIssue.type === 'verification') {
-                res.status(400).json({ error: 'Verification issues cannot be parents' });
-                return;
-              }
               // Auto-reopen closed ancestors in the entire chain
               const state = getComputedState();
               let current = state.get(parent);
@@ -578,26 +573,7 @@ export function uiCommand(program: Command): void {
                   continue;
                 }
 
-                // Check for pending verifications
-                const pendingVerifications = getVerifications(issueId).filter(v => v.status !== 'closed');
                 const timestamp = new Date().toISOString();
-
-                if (pendingVerifications.length > 0) {
-                  // Move to pending_verification instead of closing
-                  const updateEvent: UpdateEvent = {
-                    type: 'update',
-                    issueId,
-                    timestamp,
-                    data: { status: 'pending_verification' },
-                  };
-                  appendEvent(updateEvent, pebbleDir);
-                  results.push({
-                    id: issueId,
-                    success: true,
-                    error: `Moved to pending_verification (${pendingVerifications.length} verification(s) pending)`,
-                  });
-                  continue;
-                }
 
                 const event: CloseEvent = {
                   issueId,
@@ -640,7 +616,7 @@ export function uiCommand(program: Command): void {
 
             // Validate status if provided
             if (updates.status) {
-              const validStatuses = ['open', 'in_progress', 'blocked', 'pending_verification'];
+              const validStatuses = ['open', 'in_progress', 'blocked'];
               if (!validStatuses.includes(updates.status)) {
                 res.status(400).json({
                   error: `Invalid status: ${updates.status}. Use close endpoint to close issues.`,
@@ -823,18 +799,10 @@ export function uiCommand(program: Command): void {
                     res.status(400).json({ error: `Parent issue not found: ${parent}` });
                     return;
                   }
-                  if (parentFound.issue.type === 'verification') {
-                    res.status(400).json({ error: 'Verification issues cannot be parents' });
-                    return;
-                  }
                 } else {
                   const parentIssue = getIssue(parent);
                   if (!parentIssue) {
                     res.status(400).json({ error: `Parent issue not found: ${parent}` });
-                    return;
-                  }
-                  if (parentIssue.type === 'verification') {
-                    res.status(400).json({ error: 'Verification issues cannot be parents' });
                     return;
                   }
                 }
@@ -957,37 +925,6 @@ export function uiCommand(program: Command): void {
             const { reason } = req.body;
             const timestamp = new Date().toISOString();
 
-            // Check for pending verifications
-            let pendingVerifications: Issue[] = [];
-            if (isMultiWorktree()) {
-              // In multi-worktree mode, find verifications across all sources
-              const allIssues = mergeIssuesFromFiles(issueFiles);
-              pendingVerifications = allIssues.filter(
-                i => i.verifies === issueId && i.status !== 'closed'
-              );
-            } else {
-              pendingVerifications = getVerifications(issueId).filter(v => v.status !== 'closed');
-            }
-
-            if (pendingVerifications.length > 0) {
-              // Move to pending_verification instead of closed
-              const updateEvent: UpdateEvent = {
-                type: 'update',
-                issueId,
-                timestamp,
-                data: { status: 'pending_verification' },
-              };
-              appendEventToFile(updateEvent, targetFile);
-
-              // Return updated issue with info about pending verifications
-              const updatedIssue = { ...issue, status: 'pending_verification' as const, updatedAt: timestamp };
-              res.json({
-                ...updatedIssue,
-                _pendingVerifications: pendingVerifications.map(v => ({ id: v.id, title: v.title })),
-              });
-              return;
-            }
-
             const event: CloseEvent = {
               type: 'close',
               issueId,
@@ -997,57 +934,12 @@ export function uiCommand(program: Command): void {
 
             appendEventToFile(event, targetFile);
 
-            // Check if this was a verification issue and auto-close target if all verifications done
-            let autoClosed: { id: string; title: string } | undefined;
-            if (issue.verifies) {
-              let targetIssue: Issue | undefined;
-              let targetVerifications: Issue[] = [];
-
-              if (isMultiWorktree()) {
-                const found = findIssueInSources(issue.verifies, issueFiles);
-                if (found) {
-                  targetIssue = found.issue;
-                  const allIssues = mergeIssuesFromFiles(issueFiles);
-                  targetVerifications = allIssues.filter(
-                    i => i.verifies === issue.verifies && i.status !== 'closed'
-                  );
-                }
-              } else {
-                targetIssue = getIssue(issue.verifies);
-                targetVerifications = getVerifications(issue.verifies).filter(v => v.status !== 'closed');
-              }
-
-              if (targetIssue && targetIssue.status === 'pending_verification' && targetVerifications.length === 0) {
-                // All verifications closed - auto-close the target
-                const autoCloseEvent: CloseEvent = {
-                  type: 'close',
-                  issueId: issue.verifies,
-                  timestamp: new Date().toISOString(),
-                  data: { reason: 'All verifications completed' },
-                };
-
-                if (isMultiWorktree()) {
-                  const targetFound = findIssueInSources(issue.verifies, issueFiles);
-                  if (targetFound) {
-                    appendEventToFile(autoCloseEvent, targetFound.targetFile);
-                  }
-                } else {
-                  const pebbleDir = getOrCreatePebbleDir();
-                  appendEventToFile(autoCloseEvent, path.join(pebbleDir, 'issues.jsonl'));
-                }
-
-                autoClosed = { id: targetIssue.id, title: targetIssue.title };
-              }
-            }
-
             // Return updated issue
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
-              const result = updated?.issue || { ...issue, status: 'closed', updatedAt: timestamp };
-              res.json(autoClosed ? { ...result, _autoClosed: autoClosed } : result);
+              res.json(updated?.issue || { ...issue, status: 'closed', updatedAt: timestamp });
             } else {
-              const result = getIssue(issueId);
-              res.json(autoClosed ? { ...result, _autoClosed: autoClosed } : result);
+              res.json(getIssue(issueId));
             }
           } catch (error) {
             res.status(500).json({ error: (error as Error).message });
@@ -1161,15 +1053,6 @@ export function uiCommand(program: Command): void {
               if (!alreadyQueued.has(desc.id) && !desc.deleted) {
                 toDelete.push({ id: desc.id, cascade: true });
                 alreadyQueued.add(desc.id);
-              }
-            }
-
-            // Get verification issues that verify this issue - cascade delete them too
-            const verifications = getVerifications(issueId);
-            for (const v of verifications) {
-              if (!alreadyQueued.has(v.id) && !v.deleted) {
-                toDelete.push({ id: v.id, cascade: true });
-                alreadyQueued.add(v.id);
               }
             }
 

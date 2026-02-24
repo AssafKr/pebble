@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getIssue, resolveId, getBlocking, getChildren, getVerifications, getRelated, getComputedState, getAncestryChain } from '../lib/state.js';
+import { getIssue, resolveId, getBlocking, getChildren, getRelated, getComputedState, getAncestryChain } from '../lib/state.js';
 import { outputIssueDetail, outputError } from '../lib/output.js';
 
 export function showCommand(program: Command): void {
@@ -23,12 +23,11 @@ export function showCommand(program: Command): void {
 
         const blocking = getBlocking(resolvedId);
         const children = issue.type === 'epic' ? getChildren(resolvedId) : [];
-        const verifications = getVerifications(resolvedId);
         const related = getRelated(resolvedId);
         const state = getComputedState();
         const ancestry = getAncestryChain(resolvedId, state);
 
-        outputIssueDetail(issue, { blocking, children, verifications, related, ancestry }, pretty);
+        outputIssueDetail(issue, { blocking, children, related, ancestry }, pretty);
       } catch (error) {
         outputError(error as Error, pretty);
       }

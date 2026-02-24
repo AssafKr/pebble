@@ -65,7 +65,6 @@ export default {
         type: {
           epic: 'hsl(var(--type-epic))',
           bug: 'hsl(var(--type-bug))',
-          verification: 'hsl(var(--type-verification))',
           task: 'hsl(var(--type-task))',
         },
       },

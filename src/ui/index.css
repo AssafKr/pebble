@@ -54,7 +54,6 @@
     /* Type Colors (softened) */
     --type-epic: 257 28% 60%;           /* #8B7BB5 - Soft purple */
     --type-bug: 0 35% 67%;              /* #C98B8B - Dusty rose */
-    --type-verification: 189 30% 60%;   /* #7BABB8 - Soft teal */
     --type-task: 212 14% 60%;           /* #8B9BA8 - Slate blue */
 
     /* Borders & Dividers */
@@ -96,7 +95,6 @@
     --graph-edge-blocked: #D4847C;
     --graph-edge-resolved: #7C9885;
     --graph-edge-parent: #7BA3C9;
-    --graph-edge-verifies: #7BABB8;
     --graph-status-open: #E9B872;
     --graph-status-in-progress: #7BA3C9;
     --graph-status-blocked: #D4847C;
@@ -154,7 +152,6 @@
     /* Type Colors (brightened) */
     --type-epic: 257 35% 70%;           /* #A899CC - Brighter purple */
     --type-bug: 0 35% 75%;              /* #D9A8A8 - Brighter rose */
-    --type-verification: 189 40% 68%;   /* #8FC4D1 - Brighter teal */
     --type-task: 212 22% 70%;           /* #A3B3C2 - Brighter slate */
 
     /* Borders */
@@ -182,7 +179,6 @@
     --graph-edge-blocked: #E5A099;
     --graph-edge-resolved: #9BB5A3;
     --graph-edge-parent: #8FBAD9;
-    --graph-edge-verifies: #8FC4D1;
     --graph-status-open: #F0C87E;
     --graph-status-in-progress: #8FBAD9;
     --graph-status-blocked: #E5A099;

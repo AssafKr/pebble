@@ -9,7 +9,7 @@ export function updateCommand(program: Command): void {
   program
     .command('update <ids...>')
     .description('Update issues. Supports multiple IDs.')
-    .option('--status <status>', 'Status (open, in_progress, blocked, closed)')
+    .option('--status <status>', 'Status (open, in_progress, blocked)')
     .option('--priority <priority>', 'Priority (0-4)')
     .option('--title <title>', 'Title')
     .option('--description <desc>', 'Description')
@@ -72,9 +72,6 @@ export function updateCommand(program: Command): void {
             const parentIssue = getIssue(parentId);
             if (!parentIssue) {
               throw new Error(`Parent issue not found: ${options.parent}`);
-            }
-            if (parentIssue.type === 'verification') {
-              throw new Error(`Verification issues cannot be parents`);
             }
             // Auto-reopen closed ancestors in the entire chain
             const state = getComputedState();

@@ -45,7 +45,6 @@ const statusColors: Record<Status, string> = {
   open: 'border-blue-500',
   in_progress: 'border-green-500',
   blocked: 'border-red-500',
-  pending_verification: 'border-purple-500',
   closed: 'border-gray-400',
 };
 

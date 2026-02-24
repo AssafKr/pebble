@@ -29,7 +29,6 @@ export function computeState(events: IssueEvent[]): Map<string, Issue> {
           parent: createEvent.data.parent,
           blockedBy: [],
           relatedTo: [],
-          verifies: createEvent.data.verifies,
           comments: [],
           createdAt: event.timestamp,
           updatedAt: event.timestamp,
@@ -241,7 +240,6 @@ export function resolveId(partial: string): string {
 
 /**
  * Get issues that are ready for work (non-closed with no open blockers)
- * For verification issues: target must be closed
  * Excludes deleted issues
  */
 export function getReady(): Issue[] {
@@ -255,8 +253,8 @@ export function getReady(): Issue[] {
       return false;
     }
 
-    // Must not be closed or pending_verification
-    if (issue.status === 'closed' || issue.status === 'pending_verification') {
+    // Must not be closed
+    if (issue.status === 'closed') {
       return false;
     }
 
@@ -264,14 +262,6 @@ export function getReady(): Issue[] {
     for (const blockerId of issue.blockedBy) {
       const blocker = state.get(blockerId);
       if (blocker && blocker.status !== 'closed') {
-        return false;
-      }
-    }
-
-    // For verification issues: target must be closed
-    if (issue.type === 'verification' && issue.verifies) {
-      const target = state.get(issue.verifies);
-      if (!target || target.status !== 'closed') {
         return false;
       }
     }
@@ -424,16 +414,6 @@ export function getChildren(epicId: string, includeDeleted = false): Issue[] {
 }
 
 /**
- * Get verification issues that verify a given issue
- */
-export function getVerifications(issueId: string): Issue[] {
-  const events = readEvents();
-  const state = computeState(events);
-
-  return Array.from(state.values()).filter((issue) => issue.verifies === issueId);
-}
-
-/**
  * Check if an epic has any open children
  */
 export function hasOpenChildren(epicId: string): boolean {
@@ -443,9 +423,7 @@ export function hasOpenChildren(epicId: string): boolean {
 
 /**
  * Get issues that became unblocked/ready after closing an issue.
- * Includes:
- * - Issues that were blocked by this issue and now have all blockers closed
- * - Verification issues that verify this issue (they become ready when target closes)
+ * Returns issues that were blocked by this issue and now have all blockers closed.
  */
 export function getNewlyUnblocked(closedIssueId: string): Issue[] {
   const events = readEvents();
@@ -456,8 +434,6 @@ export function getNewlyUnblocked(closedIssueId: string): Issue[] {
     // Skip closed issues
     if (issue.status === 'closed') continue;
 
-    let isUnblockedByThis = false;
-
     // Check if this issue was blocking it
     if (issue.blockedBy.includes(closedIssueId)) {
       // Check if all blockers are now closed
@@ -466,24 +442,8 @@ export function getNewlyUnblocked(closedIssueId: string): Issue[] {
         return blocker?.status === 'closed';
       });
       if (allBlockersClosed) {
-        isUnblockedByThis = true;
+        result.push(issue);
       }
-    }
-
-    // Check if this is a verification issue that verifies the closed issue
-    if (issue.type === 'verification' && issue.verifies === closedIssueId) {
-      // Check if all blockers are also closed
-      const allBlockersClosed = issue.blockedBy.every((blockerId) => {
-        const blocker = state.get(blockerId);
-        return blocker?.status === 'closed';
-      });
-      if (allBlockersClosed) {
-        isUnblockedByThis = true;
-      }
-    }
-
-    if (isUnblockedByThis) {
-      result.push(issue);
     }
   }
 

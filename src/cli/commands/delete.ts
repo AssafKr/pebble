@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import type { DeleteEvent, UpdateEvent, Issue } from '../../shared/types.js';
 import { getOrCreatePebbleDir, appendEvent } from '../lib/storage.js';
-import { resolveId, getDescendants, getVerifications, getComputedState } from '../lib/state.js';
+import { resolveId, getDescendants, getComputedState } from '../lib/state.js';
 import { outputError, formatJson } from '../lib/output.js';
 
 // Type for accumulated reference cleanup updates
@@ -145,14 +145,6 @@ export function deleteCommand(program: Command): void {
               }
             }
 
-            // Get verification issues that verify this issue - cascade delete them too
-            const verifications = getVerifications(resolvedId);
-            for (const v of verifications) {
-              if (!alreadyQueued.has(v.id) && !v.deleted) {
-                toDelete.push({ id: v.id, cascade: true });
-                alreadyQueued.add(v.id);
-              }
-            }
           } catch (error) {
             results.push({ id, success: false, error: (error as Error).message });
           }

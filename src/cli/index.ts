@@ -24,7 +24,6 @@ import { mergeCommand } from './commands/merge.js';
 import { summaryCommand } from './commands/summary.js';
 import { historyCommand } from './commands/history.js';
 import { searchCommand } from './commands/search.js';
-import { verificationsCommand } from './commands/verifications.js';
 import { initCommand } from './commands/init.js';
 
 // Read version from package.json
@@ -37,7 +36,8 @@ const program = new Command();
 program
   .name('pebble')
   .description('A lightweight JSONL-based issue tracker')
-  .version(packageJson.version);
+  .version(packageJson.version)
+  .addHelpText('after', '\nAll commands accept partial IDs (e.g., "abc" matches "PROJ-abc123")');
 
 // Global options
 program.option('-P, --pretty', 'Human-readable output (default: JSON)');
@@ -72,7 +72,6 @@ mergeCommand(program);
 summaryCommand(program);
 historyCommand(program);
 searchCommand(program);
-verificationsCommand(program);
 initCommand(program);
 
 program.parse();

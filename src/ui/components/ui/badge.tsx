@@ -33,8 +33,6 @@ const badgeVariants = cva(
           'bg-type-epic text-white shadow-xs',
         bug:
           'bg-type-bug text-white shadow-xs',
-        verification:
-          'bg-type-verification text-white shadow-xs',
         task:
           'bg-type-task text-white shadow-xs',
       },

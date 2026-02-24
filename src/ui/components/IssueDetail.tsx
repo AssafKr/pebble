@@ -48,9 +48,6 @@ import {
   ChevronRight,
   Activity,
   Folder,
-  Search,
-  AlertCircle,
-  CheckCircle2,
   Link2,
   Trash2,
 } from 'lucide-react';
@@ -211,16 +208,6 @@ export function IssueDetail({
 
   const parentIssue = issue.parent ? issueMap.get(issue.parent) : undefined;
 
-  // Verification info
-  const isVerification = issue.type === 'verification';
-  const verifiesIssue = issue.verifies ? issueMap.get(issue.verifies) : undefined;
-  const verifiesReady = verifiesIssue?.status === 'closed';
-
-  // Verifications targeting this issue
-  const pendingVerifications = useMemo(() => {
-    return allIssues.filter(i => i.verifies === issue.id);
-  }, [allIssues, issue.id]);
-
   // Close panel on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -335,38 +322,22 @@ export function IssueDetail({
     setClosingIssue(true);
     setCloseConfirmOpen(false);
     try {
-      const result = await closeIssue(issue.id);
-      // Check if moved to pending_verification instead of closed
-      if (result.status === 'pending_verification') {
-        const pendingCount = (result as { _pendingVerifications?: Array<{ id: string }> })._pendingVerifications?.length || 0;
-        toast(`Moved to pending verification (${pendingCount} verification${pendingCount !== 1 ? 's' : ''} pending)`, {
-          duration: 5000,
-        });
-      } else {
-        // Check if this closure auto-closed a target issue
-        const autoClosed = (result as { _autoClosed?: { id: string; title: string } })._autoClosed;
-        if (autoClosed) {
-          toast.success(`Issue closed. ${autoClosed.id} auto-closed (all verifications complete)`, {
-            duration: 5000,
-          });
-        } else {
-          toast('Issue closed', {
-            duration: 5000,
-            action: {
-              label: 'Undo',
-              onClick: async () => {
-                try {
-                  await reopenIssue(issue.id);
-                  toast.success('Issue reopened');
-                  onRefresh?.();
-                } catch {
-                  toast.error('Failed to undo');
-                }
-              },
-            },
-          });
-        }
-      }
+      await closeIssue(issue.id);
+      toast('Issue closed', {
+        duration: 5000,
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            try {
+              await reopenIssue(issue.id);
+              toast.success('Issue reopened');
+              onRefresh?.();
+            } catch {
+              toast.error('Failed to undo');
+            }
+          },
+        },
+      });
       onRefresh?.();
     } catch (err) {
       toast.error('Failed to close issue', {
@@ -683,14 +654,12 @@ export function IssueDetail({
           <Badge className={
             issue.type === 'epic' ? 'bg-indigo-500 text-white' :
             issue.type === 'bug' ? 'bg-rose-500 text-white' :
-            issue.type === 'verification' ? 'bg-cyan-500 text-white' :
             'bg-slate-500 text-white'
           }>{issue.type}</Badge>
           <Badge className={
             issue.status === 'open' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' :
             issue.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' :
             issue.status === 'blocked' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200' :
-            issue.status === 'pending_verification' ? 'bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-200' :
             'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' // closed
           }>
             {issue.status.replace('_', ' ')}
@@ -820,100 +789,19 @@ export function IssueDetail({
           </div>
         )}
 
-        {/* Verification Target (for verification issues) */}
-        {isVerification && verifiesIssue && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Verifies
-            </h3>
-            <div
-              className={`p-3 rounded-lg border ${
-                verifiesReady
-                  ? 'bg-cyan-50 border-cyan-200 dark:bg-cyan-950 dark:border-cyan-800'
-                  : 'bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700'
-              }`}
-            >
-              <button
-                className="text-left w-full"
-                onClick={() => onSelectIssue(verifiesIssue)}
-              >
-                <span className="font-mono text-xs">{verifiesIssue.id}</span>
-                <span className="mx-2">—</span>
-                <span>{verifiesIssue.title}</span>
-              </button>
-              <div
-                className={`mt-2 text-sm flex items-center gap-1 ${
-                  verifiesReady ? 'text-cyan-700 dark:text-cyan-400' : 'text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                {verifiesReady ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <AlertCircle className="h-4 w-4" />
-                )}
-                {verifiesReady ? 'Target closed — ready to verify' : 'Waiting for target to close'}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Pending Verifications (for regular issues that have verifications) */}
-        {!isVerification && pendingVerifications.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Verifications ({pendingVerifications.length})
-            </h3>
-            <div className="space-y-1">
-              {pendingVerifications.map((v) => (
-                <button
-                  key={v.id}
-                  className="block w-full text-left text-sm hover:bg-muted rounded p-2"
-                  onClick={() => onSelectIssue(v)}
-                >
-                  <span className="font-mono text-xs">{v.id}</span>
-                  <span className="mx-2">—</span>
-                  <span>{v.title}</span>
-                  <Badge
-                    variant={STATUS_BADGE_VARIANTS[v.status]}
-                    className="ml-2 text-xs"
-                  >
-                    {v.status.replace('_', ' ')}
-                  </Badge>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Children */}
         {childIssues.length > 0 && (
           <div className="space-y-2">
             {(() => {
-              // Separate regular children from verification children
-              const regularChildren = childIssues.filter((c) => c.type !== 'verification');
-              const verificationChildren = childIssues.filter((c) => c.type === 'verification');
-              const regularClosed = regularChildren.filter((c) => c.status === 'closed').length;
-              const verificationClosed = verificationChildren.filter((c) => c.status === 'closed').length;
-              const totalClosed = regularClosed + verificationClosed;
+              const closedCount = childIssues.filter((c) => c.status === 'closed').length;
               const total = childIssues.length;
-              const percent = Math.round((totalClosed / total) * 100);
-
-              // Build progress label
-              const parts: string[] = [];
-              if (regularChildren.length > 0) {
-                parts.push(`${regularClosed}/${regularChildren.length} done`);
-              }
-              if (verificationChildren.length > 0) {
-                parts.push(`${verificationClosed}/${verificationChildren.length} verification${verificationChildren.length === 1 ? '' : 's'}`);
-              }
+              const percent = Math.round((closedCount / total) * 100);
 
               return (
                 <>
                   <h3 className="text-sm font-medium flex items-center gap-1">
                     <GitBranch className="h-4 w-4" />
-                    Child Issues ({parts.join(', ')})
+                    Child Issues ({closedCount}/{total} done)
                   </h3>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div

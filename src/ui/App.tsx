@@ -73,8 +73,8 @@ function AppContent() {
   // Lifted CommentsView filter state (persists across tab switches)
   const [commentsSearchFilter, setCommentsSearchFilter] = useState('');
 
-  // Get all potential parents for the create form parent selector (any type except verification)
-  const parentCandidates = useMemo(() => issues.filter((i) => i.type !== 'verification'), [issues]);
+  // Get all potential parents for the create form parent selector
+  const parentCandidates = useMemo(() => issues, [issues]);
 
   // Close detail panel when view changes
   const handleViewChange = (newView: View) => {
