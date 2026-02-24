@@ -24,8 +24,6 @@ const badgeVariants = cva(
           'bg-status-progress/15 text-status-progress border border-status-progress/30',
         blocked:
           'bg-status-blocked/15 text-status-blocked border border-status-blocked/30',
-        pending:
-          'bg-status-pending/15 text-status-pending border border-status-pending/30',
         closed:
           'bg-status-closed/15 text-status-closed border border-status-closed/30',
         // Type variants

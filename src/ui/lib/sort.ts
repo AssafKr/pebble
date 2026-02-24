@@ -73,28 +73,3 @@ export function sortByStatus(issues: Issue[]): Issue[] {
     return getStatusOrder(a.status) - getStatusOrder(b.status);
   });
 }
-
-/**
- * Groups issues into open (non-closed) and closed.
- * Useful for showing closed items at the bottom.
- *
- * @param issues - Array of issues to partition
- * @returns Object with open and closed arrays
- */
-export function partitionByClosedStatus(issues: Issue[]): {
-  open: Issue[];
-  closed: Issue[];
-} {
-  const open: Issue[] = [];
-  const closed: Issue[] = [];
-
-  for (const issue of issues) {
-    if (issue.status === 'closed') {
-      closed.push(issue);
-    } else {
-      open.push(issue);
-    }
-  }
-
-  return { open, closed };
-}

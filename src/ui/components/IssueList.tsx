@@ -712,7 +712,7 @@ export function IssueList({
         },
       },
     ],
-    [issues, issueMap, latestEventMap, onSelectIssue, selectedIds, onToggleSelect, onSelectAll, visibleIssueIds, allSelected, someSelected, sourcePathPrefix]
+    [issues, issueMap, latestEventMap, onSelectIssue, selectedIds, onToggleSelect, onSelectAll, visibleIssueIds, allSelected, someSelected]
   );
 
   const table = useReactTable({

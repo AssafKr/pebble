@@ -48,7 +48,6 @@
     --status-open: 38 73% 68%;          /* #E9B872 - Warm honey */
     --status-progress: 209 41% 63%;     /* #7BA3C9 - Soft sky */
     --status-blocked: 4 55% 66%;        /* #D4847C - Muted coral */
-    --status-pending: 270 28% 64%;      /* #A78BBA - Soft lavender */
     --status-closed: 141 13% 54%;       /* #7C9885 - Sage (matches primary) */
 
     /* Type Colors (softened) */
@@ -146,7 +145,6 @@
     --status-open: 42 78% 72%;          /* #F0C87E - Brighter honey */
     --status-progress: 209 52% 70%;     /* #8FBAD9 - Brighter sky */
     --status-blocked: 4 60% 76%;        /* #E5A099 - Brighter coral */
-    --status-pending: 270 35% 72%;      /* #B9A3CC - Brighter lavender */
     --status-closed: 141 18% 66%;       /* #9BB5A3 - Brighter sage */
 
     /* Type Colors (brightened) */

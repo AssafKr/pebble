@@ -63,99 +63,6 @@ function pad(str: string, width: number): string {
 }
 
 /**
- * Format a single issue for pretty display
- */
-export function formatIssuePretty(issue: Issue): string {
-  const lines: string[] = [];
-
-  lines.push(`${issue.id} - ${issue.title}`);
-  lines.push('─'.repeat(60));
-  lines.push(`Type:     ${formatType(issue.type)}`);
-  lines.push(`Priority: ${formatPriority(issue.priority)}`);
-  lines.push(`Status:   ${formatStatus(issue.status)}`);
-
-  if (issue.parent) {
-    lines.push(`Parent:   ${issue.parent}`);
-  }
-
-  if (issue.description) {
-    lines.push('');
-    lines.push('Description:');
-    lines.push(issue.description);
-  }
-
-  if (issue.blockedBy.length > 0) {
-    lines.push('');
-    lines.push(`Blocked by: ${issue.blockedBy.join(', ')}`);
-  }
-
-  if (issue.comments.length > 0) {
-    lines.push('');
-    lines.push('Comments:');
-    for (const comment of issue.comments) {
-      const author = comment.author ?? 'unknown';
-      const date = new Date(comment.timestamp).toLocaleString();
-      lines.push(`  [${date}] ${author}: ${comment.text}`);
-    }
-  }
-
-  lines.push('');
-  lines.push(`Created: ${new Date(issue.createdAt).toLocaleString()}`);
-  lines.push(`Updated: ${new Date(issue.updatedAt).toLocaleString()}`);
-
-  return lines.join('\n');
-}
-
-/**
- * Format a single issue with blocking info for pretty display
- */
-export function formatIssuePrettyWithBlocking(issue: Issue, blocking: Issue[]): string {
-  const lines: string[] = [];
-
-  lines.push(`${issue.id} - ${issue.title}`);
-  lines.push('─'.repeat(60));
-  lines.push(`Type:     ${formatType(issue.type)}`);
-  lines.push(`Priority: ${formatPriority(issue.priority)}`);
-  lines.push(`Status:   ${formatStatus(issue.status)}`);
-
-  if (issue.parent) {
-    lines.push(`Parent:   ${issue.parent}`);
-  }
-
-  if (issue.description) {
-    lines.push('');
-    lines.push('Description:');
-    lines.push(issue.description);
-  }
-
-  if (issue.blockedBy.length > 0) {
-    lines.push('');
-    lines.push(`Blocked by: ${issue.blockedBy.join(', ')}`);
-  }
-
-  if (blocking.length > 0) {
-    lines.push('');
-    lines.push(`Blocking: ${blocking.map(i => i.id).join(', ')}`);
-  }
-
-  if (issue.comments.length > 0) {
-    lines.push('');
-    lines.push('Comments:');
-    for (const comment of issue.comments) {
-      const author = comment.author ?? 'unknown';
-      const date = new Date(comment.timestamp).toLocaleString();
-      lines.push(`  [${date}] ${author}: ${comment.text}`);
-    }
-  }
-
-  lines.push('');
-  lines.push(`Created: ${new Date(issue.createdAt).toLocaleString()}`);
-  lines.push(`Updated: ${new Date(issue.updatedAt).toLocaleString()}`);
-
-  return lines.join('\n');
-}
-
-/**
  * Context for detailed issue display
  */
 export interface IssueDetailContext {
@@ -354,27 +261,6 @@ export function formatDepsPretty(
 }
 
 /**
- * Format events for pretty display
- */
-export function formatEventsPretty(events: IssueEvent[]): string {
-  if (events.length === 0) {
-    return 'No events found.';
-  }
-
-  const lines: string[] = [];
-
-  for (const event of events) {
-    const date = new Date(event.timestamp).toLocaleString();
-    lines.push(`[${date}] ${event.type.toUpperCase()} ${event.issueId}`);
-  }
-
-  lines.push('');
-  lines.push(`Total: ${events.length} event(s)`);
-
-  return lines.join('\n');
-}
-
-/**
  * Format an error for output
  */
 export function formatError(error: Error | string): string {
@@ -388,46 +274,6 @@ export function formatError(error: Error | string): string {
 export function formatErrorPretty(error: Error | string): string {
   const message = error instanceof Error ? error.message : error;
   return `Error: ${message}`;
-}
-
-/**
- * Output data in the requested format
- */
-export function output(data: unknown, pretty: boolean): void {
-  if (pretty) {
-    // For pretty mode, we need to know the type
-    // This is a generic fallback
-    console.log(formatJson(data));
-  } else {
-    console.log(formatJson(data));
-  }
-}
-
-/**
- * Output an issue in the requested format
- */
-export function outputIssue(issue: Issue, pretty: boolean): void {
-  if (pretty) {
-    console.log(formatIssuePretty(issue));
-  } else {
-    console.log(formatJson(issue));
-  }
-}
-
-/**
- * Output an issue with blocking info in the requested format
- */
-export function outputIssueWithBlocking(issue: Issue, blocking: Issue[], pretty: boolean): void {
-  if (pretty) {
-    console.log(formatIssuePrettyWithBlocking(issue, blocking));
-  } else {
-    // Include blocking IDs in JSON output
-    const output = {
-      ...issue,
-      blocking: blocking.map(i => i.id),
-    };
-    console.log(formatJson(output));
-  }
 }
 
 /**
