@@ -1,170 +1,176 @@
-# pebble
+# Pebble
 
-A lightweight, JSONL-based issue tracker with CLI and React UI.
+Pebble is a lightweight local issue tracker for people who want fast CLI workflows without giving up a usable UI.
 
-## Features
+It stores everything in append-only JSONL, works well in git repos, and keeps the whole system easy to inspect, script, and version.
 
-- **Simple storage**: Append-only JSONL file enables full history
-- **Git-like discovery**: Auto-discovers `.pebble/` directory upward
-- **JSON-first output**: JSON by default, `--pretty` for human-readable
-- **Dependencies**: Block issues on other issues, cycle detection
-- **React UI**: View issues, filter, sort, dependency graph visualization
+## Why people use it
 
-## Installation
+Most issue trackers are great until you want something simpler:
+
+- no hosted service
+- no account setup
+- no database to babysit
+- no slow UI for everyday actions
+- no hiding your data behind an API
+
+Pebble gives you a local-first tracker that still feels like a real product, not just a pile of text files.
+
+## What Pebble gives you
+
+- local issue tracking with plain JSONL storage
+- a fast CLI built for daily use
+- a browser UI for browsing, editing, and visualizing work
+- dependency tracking and ready queues
+- parent/child issue structure for epics and tasks
+- history that stays inspectable because events are append-only
+
+## Install
+
+Pebble requires Node 18+.
 
 ```bash
 npm install -g @markmdev/pebble
 ```
 
-After installation, the `pb` command is available globally.
+After install, use the `pb` command.
 
-## Quick Start
+## Quick start
+
+Initialize a repo:
 
 ```bash
-# Create your first issue (auto-initializes .pebble/ directory)
-pb create "Fix login bug" -t bug -p 1
+pb init
+```
 
-# List all issues
-pb list
+Create a few issues:
 
-# Show ready issues (no open blockers)
-pb ready
+```bash
+pb create "Set up auth flow" -t epic -p 1
+pb create "Build login screen" --parent ISSUE-ID
+pb create "Fix OAuth callback bug" -t bug -p 0
+```
 
-# View in the browser
+See what is ready to work on:
+
+```bash
+pb ready --pretty
+```
+
+Open the UI:
+
+```bash
 pb ui
 ```
 
-## Commands
+## How it works
 
-### Queries
+Pebble stores events in `.pebble/issues.jsonl`.
 
-| Command | Description |
-|---------|-------------|
-| `pb ready` | Issues with no open blockers |
-| `pb blocked` | Issues with open blockers |
-| `pb list [options]` | List issues with filters |
-| `pb show <id>` | Full issue details |
+That means:
 
-### Mutations
+- issue history is append-only
+- state can be rebuilt from the log
+- the data format is easy to inspect and script
+- there is no separate database layer to manage
 
-| Command | Description |
-|---------|-------------|
-| `pb create <title> [options]` | Create an issue |
-| `pb update <ids...> [options]` | Update issues (supports batch) |
-| `pb claim <ids...>` | Set status to in_progress (shorthand) |
-| `pb close <ids...> [--reason] [--comment]` | Close issues (supports batch) |
-| `pb reopen <id> [--reason]` | Reopen an issue |
+Pebble also auto-discovers the nearest `.pebble/` directory as you move around a repo. In git worktrees, `--local` forces the current worktree's local `.pebble/` directory.
 
-### Dependencies
+## Core workflow
 
-| Command | Description |
-|---------|-------------|
-| `pb dep add <id> <blocker>` | Add blocking dependency |
-| `pb dep remove <id> <blocker>` | Remove dependency |
-| `pb dep list <id>` | Show dependencies |
-| `pb dep tree <id>` | Show dependency tree |
+### Create and organize work
 
-### Comments & Visualization
+- `pb create` — create tasks, bugs, or epics
+- `pb update` — change title, description, priority, status, or parent
+- `pb claim` — move work into `in_progress`
+- `pb close` — close completed work
+- `pb reopen` — reopen closed work
 
-| Command | Description |
-|---------|-------------|
-| `pb comments add <id> <text>` | Add a comment |
-| `pb graph [--root id]` | Show dependency graph |
-| `pb ui [--port 3333]` | Serve React UI |
+### Work from queues
 
-## Options
+- `pb ready` — issues with no open blockers
+- `pb blocked` — issues waiting on other work
+- `pb list` — filtered issue listing
+- `pb summary` — epic summary with child completion status
 
-### Global
+### Model dependencies
 
-- `--pretty` — Human-readable output (default: JSON)
-- `--help` — Show help
+- `pb dep add` — add a blocker
+- `pb dep remove` — remove a blocker
+- `pb dep list` — inspect dependencies
+- `pb dep tree` — visualize blocker chains
 
-### Create
+### Track activity
 
-- `-t, --type <type>` — Issue type: task, bug, epic (default: task)
-- `-p, --priority <n>` — Priority: 0=critical, 4=backlog (default: 2)
-- `-d, --description <text>` — Description
-- `--parent <id>` — Parent issue ID
+- `pb comments add` — leave notes on issues
+- `pb history` — inspect recent activity
+- `pb search` — search titles, descriptions, and comments
 
-### List
+### Manage data safely
 
-- `--status <status>` — Filter by status
-- `--type <type>` — Filter by type
-- `--priority <n>` — Filter by priority
-- `--parent <id>` — Filter by parent
+- `pb delete` — soft delete issues
+- `pb restore` — restore deleted issues
+- `pb merge` — merge multiple issue logs
+- `pb import` — import from older Beads issue files
 
-### Update
+## UI
 
-- `--status <status>` — Set status
-- `--priority <n>` — Set priority
-- `--title <text>` — Set title
-- `--description <text>` — Set description
+`pb ui` starts a local React app for people who want a visual layer on top of the CLI.
 
-## Data Model
+The UI includes:
 
-### Issue
+- issue lists with filtering and sorting
+- issue editing
+- comments and history
+- dependency graph views
+- parent/child navigation
+- real-time updates from CLI changes
 
-```typescript
-{
-  id: string;           // PREFIX-xxxxxx
-  title: string;
-  type: 'task' | 'bug' | 'epic';
-  priority: 0-4;        // 0=critical, 4=backlog
-  status: 'open' | 'in_progress' | 'blocked' | 'closed';
-  description?: string;
-  parent?: string;      // Parent issue ID
-  blockedBy: string[];  // IDs of blocking issues
-  comments: Comment[];
-  createdAt: string;
-  updatedAt: string;
-}
-```
+## Output style
 
-### Storage
+Pebble is JSON-first by default, which makes it easy to script.
 
-All data is stored in `.pebble/issues.jsonl` as append-only events:
-- `create` — New issue
-- `update` — Field changes
-- `close` — Close with reason
-- `reopen` — Reopen with reason
-- `comment` — Add comment
-
-## UI Features
-
-The React UI (`pb ui`) provides full CRUD capabilities with real-time updates:
-
-- **Issue List**: Hierarchical view (epics with children), sorting, filtering, search
-- **Create Issues**: "New Issue" button opens creation dialog
-- **Inline Editing**: Click title to edit, status/priority dropdowns, description editing
-- **Issue Actions**: Close/reopen, add comments, manage blockers
-- **Dependency Graph**: Interactive visualization with parent-child and blocker edges
-- **History View**: Timeline of all events, filterable by type
-- **Real-time Sync**: Changes from CLI automatically appear in UI via SSE
-- **Breadcrumbs**: Navigation trail for easy orientation
-
-## Business Rules
-
-1. **Ready**: Non-closed issue where all `blockedBy` issues are closed
-2. **Blocked**: Issue has at least one open blocker
-3. **Epic close**: Cannot close epic if any child is not closed
-4. **Cycle detection**: Cannot create circular dependencies
-5. **ID resolution**: Partial IDs work (case-insensitive prefix match)
-
-## Development
+Use `--pretty` when you want human-readable terminal output:
 
 ```bash
-# Install dependencies
-npm install
-
-# Build
-npm run build
-
-# Run tests
-npm test
-
-# Type check
-npm run typecheck
+pb list --pretty
+pb ready --pretty
+pb blocked --pretty
 ```
+
+## Business rules worth knowing
+
+- issues can be `open`, `in_progress`, `blocked`, or `closed`
+- issue types are `task`, `bug`, and `epic`
+- ready issues are issues with no open blockers
+- closing an epic is blocked if any child is still open
+- dependency cycles are rejected
+- partial IDs work, so you usually do not need to type the full identifier
+
+## Example commands
+
+```bash
+# Show current work
+pb list --pretty
+
+# Claim a task
+pb claim ISSUE-ID
+
+# Add a blocker
+pb dep add ISSUE-B ISSUE-A
+
+# Show what is blocked and why
+pb blocked --pretty
+
+# Show issue details
+pb show ISSUE-ID
+```
+
+## Learn more
+
+- [CLI Reference](docs/cli-reference.md)
+- [CLI Examples](CLI_EXAMPLES.md)
+- [CLI Spec](CLI_SPEC.md)
 
 ## License
 
