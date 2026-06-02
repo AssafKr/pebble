@@ -1,6 +1,6 @@
 import {useDraggable} from '@dnd-kit/core';
 import {CSS} from '@dnd-kit/utilities';
-import {Diamond} from 'lucide-react';
+import {Diamond, ListTree} from 'lucide-react';
 import type {Issue} from '../../shared/types';
 import {PRIORITY_DISPLAY_LABELS} from '../../shared/types';
 import {countOpenBlockers} from '../lib/issueBlockers';
@@ -41,8 +41,9 @@ export function IssueKanbanCard({
   const typeBg = getIssueTypeBackgroundClass(issue);
   const isClosed = issue.status === 'closed';
 
-  const parentEpic = issue.parent ? issueMap.get(issue.parent) : undefined;
-  const showParentEpic = parentEpic?.type === 'epic';
+  const parent = issue.parent ? issueMap.get(issue.parent) : undefined;
+  const showParentEpic = parent?.type === 'epic';
+  const showParentTask = parent != null && parent.type !== 'epic';
 
   const style = transform
     ? {
@@ -69,14 +70,23 @@ export function IssueKanbanCard({
     >
       <div className="p-3 space-y-2">
         <div className="flex items-start justify-between gap-2">
-          {showParentEpic && parentEpic ? (
+          {showParentEpic && parent ? (
             <div
               className="flex items-center gap-1.5 min-w-0 flex-1"
-              title={`Parent epic: ${parentEpic.title}`}
-              aria-label={`Parent epic: ${parentEpic.title}`}
+              title={`Parent epic: ${parent.title}`}
+              aria-label={`Parent epic: ${parent.title}`}
             >
               <Diamond className="h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden />
-              <span className="text-xs text-muted-foreground truncate">{parentEpic.title}</span>
+              <span className="text-xs text-muted-foreground truncate">{parent.title}</span>
+            </div>
+          ) : showParentTask ? (
+            <div
+              className="flex items-center gap-1.5 min-w-0 flex-1"
+              title={`Parent task: ${parent.title}`}
+              aria-label={`Parent task: ${parent.title}`}
+            >
+              <ListTree className="h-3.5 w-3.5 shrink-0 text-slate-600 dark:text-slate-400" aria-hidden />
+              <span className="text-xs text-muted-foreground truncate">{parent.title}</span>
             </div>
           ) : (
             <span className="flex-1 min-w-0" />
