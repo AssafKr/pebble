@@ -1,15 +1,18 @@
-import { Command } from 'commander';
-import type { DeleteEvent, UpdateEvent, Issue } from '../../shared/types.js';
-import { getOrCreatePebbleDir, appendEvent } from '../lib/storage.js';
-import { resolveId, getDescendants, getComputedState } from '../lib/state.js';
-import { outputError, formatJson } from '../lib/output.js';
+import {Command} from 'commander';
+import type {DeleteEvent, UpdateEvent, Issue} from '../../shared/types.js';
+import {getOrCreatePebbleDir, appendEvent} from '../lib/storage.js';
+import {resolveId, getDescendants, getComputedState} from '../lib/state.js';
+import {outputError, formatJson} from '../lib/output.js';
 
 // Type for accumulated reference cleanup updates
-type ReferenceUpdates = Map<string, {
-  blockedBy?: string[];
-  relatedTo?: string[];
-  parent?: string;
-}>;
+type ReferenceUpdates = Map<
+  string,
+  {
+    blockedBy?: string[];
+    relatedTo?: string[];
+    parent?: string;
+  }
+>;
 
 /**
  * Collect reference cleanup updates for a deleted issue.
@@ -66,11 +69,7 @@ function collectReferenceCleanup(
 /**
  * Emit all collected reference cleanup updates as UpdateEvents
  */
-function emitReferenceCleanup(
-  updates: ReferenceUpdates,
-  pebbleDir: string,
-  timestamp: string
-): void {
+function emitReferenceCleanup(updates: ReferenceUpdates, pebbleDir: string, timestamp: string): void {
   for (const [id, data] of updates) {
     if (Object.keys(data).length > 0) {
       const updateEvent: UpdateEvent = {
@@ -97,8 +96,12 @@ export function deleteCommand(program: Command): void {
         const state = getComputedState();
 
         // Support comma-separated IDs
-        const allIds = ids
-          .flatMap((id) => id.split(',').map((s) => s.trim()).filter(Boolean));
+        const allIds = ids.flatMap((id) =>
+          id
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        );
 
         if (allIds.length === 0) {
           throw new Error('No issue IDs provided');
@@ -112,7 +115,7 @@ export function deleteCommand(program: Command): void {
         }> = [];
 
         // Collect all issues to delete (including cascaded)
-        const toDelete: Array<{ id: string; cascade: boolean }> = [];
+        const toDelete: Array<{id: string; cascade: boolean}> = [];
         const alreadyQueued = new Set<string>();
 
         for (const id of allIds) {
@@ -121,18 +124,18 @@ export function deleteCommand(program: Command): void {
             const issue = state.get(resolvedId);
 
             if (!issue) {
-              results.push({ id, success: false, error: `Issue not found: ${id}` });
+              results.push({id, success: false, error: `Issue not found: ${id}`});
               continue;
             }
 
             if (issue.deleted) {
-              results.push({ id: resolvedId, success: false, error: `Issue is already deleted: ${resolvedId}` });
+              results.push({id: resolvedId, success: false, error: `Issue is already deleted: ${resolvedId}`});
               continue;
             }
 
             // Add this issue
             if (!alreadyQueued.has(resolvedId)) {
-              toDelete.push({ id: resolvedId, cascade: false });
+              toDelete.push({id: resolvedId, cascade: false});
               alreadyQueued.add(resolvedId);
             }
 
@@ -140,22 +143,21 @@ export function deleteCommand(program: Command): void {
             const descendants = getDescendants(resolvedId, state);
             for (const desc of descendants) {
               if (!alreadyQueued.has(desc.id) && !desc.deleted) {
-                toDelete.push({ id: desc.id, cascade: true });
+                toDelete.push({id: desc.id, cascade: true});
                 alreadyQueued.add(desc.id);
               }
             }
-
           } catch (error) {
-            results.push({ id, success: false, error: (error as Error).message });
+            results.push({id, success: false, error: (error as Error).message});
           }
         }
 
         // Collect all reference cleanup updates first (to handle multi-issue deletion correctly)
         const timestamp = new Date().toISOString();
-        const deletedIds = new Set(toDelete.map(d => d.id));
+        const deletedIds = new Set(toDelete.map((d) => d.id));
         const referenceUpdates: ReferenceUpdates = new Map();
 
-        for (const { id } of toDelete) {
+        for (const {id} of toDelete) {
           collectReferenceCleanup(id, deletedIds, state, referenceUpdates);
         }
 
@@ -163,7 +165,7 @@ export function deleteCommand(program: Command): void {
         emitReferenceCleanup(referenceUpdates, pebbleDir, timestamp);
 
         // Now emit delete events
-        for (const { id, cascade } of toDelete) {
+        for (const {id, cascade} of toDelete) {
           const issue = state.get(id);
           if (!issue) continue;
 
@@ -179,7 +181,7 @@ export function deleteCommand(program: Command): void {
           };
           appendEvent(deleteEvent, pebbleDir);
 
-          results.push({ id, success: true, cascade: cascade || undefined });
+          results.push({id, success: true, cascade: cascade || undefined});
         }
 
         // Output results
@@ -199,16 +201,14 @@ export function deleteCommand(program: Command): void {
             console.log(`✗ ${result.id}: ${result.error}`);
           }
         } else {
-          console.log(formatJson({
-            deleted: results
-              .filter((r) => r.success)
-              .map((r) => ({ id: r.id, cascade: r.cascade ?? false })),
-            ...(results.some((r) => !r.success) && {
-              errors: results
-                .filter((r) => !r.success)
-                .map((r) => ({ id: r.id, error: r.error })),
-            }),
-          }));
+          console.log(
+            formatJson({
+              deleted: results.filter((r) => r.success).map((r) => ({id: r.id, cascade: r.cascade ?? false})),
+              ...(results.some((r) => !r.success) && {
+                errors: results.filter((r) => !r.success).map((r) => ({id: r.id, error: r.error})),
+              }),
+            })
+          );
         }
       } catch (error) {
         outputError(error as Error, pretty);

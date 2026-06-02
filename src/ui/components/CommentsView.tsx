@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import type { IssueEvent, Issue, Status } from '../../shared/types';
-import { STATUS_BADGE_VARIANTS } from '../../shared/types';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
-import { MessageSquare, AlertTriangle, Folder } from 'lucide-react';
-import { formatRelativeTime } from '../../shared/time';
+import React, {useState, useMemo} from 'react';
+import type {IssueEvent, Issue, Status} from '../../shared/types';
+import {STATUS_BADGE_VARIANTS} from '../../shared/types';
+import {Input} from './ui/input';
+import {Badge} from './ui/badge';
+import {MessageSquare, AlertTriangle, Folder} from 'lucide-react';
+import {formatRelativeTime} from '../../shared/time';
 
 interface CommentsViewProps {
   events: IssueEvent[];
@@ -16,17 +16,14 @@ interface CommentsViewProps {
 }
 
 // Get ancestry chain from issue up to root
-function getAncestryChain(
-  issueId: string,
-  issueMap: Map<string, Issue>
-): Array<{ id: string; title: string }> {
-  const chain: Array<{ id: string; title: string }> = [];
+function getAncestryChain(issueId: string, issueMap: Map<string, Issue>): Array<{id: string; title: string}> {
+  const chain: Array<{id: string; title: string}> = [];
   let current = issueMap.get(issueId);
 
   while (current?.parent) {
     const parent = issueMap.get(current.parent);
     if (!parent || chain.some((a) => a.id === parent.id)) break; // Prevent cycles
-    chain.push({ id: parent.id, title: parent.title });
+    chain.push({id: parent.id, title: parent.title});
     current = parent;
   }
 
@@ -62,10 +59,7 @@ export function CommentsView({
   const searchFilter = searchFilterProp ?? searchFilterInternal;
   const setSearchFilter = onSearchFilterChange ?? setSearchFilterInternal;
 
-  const issueMap = useMemo(
-    () => new Map(issues.map((i) => [i.id, i])),
-    [issues]
-  );
+  const issueMap = useMemo(() => new Map(issues.map((i) => [i.id, i])), [issues]);
 
   // Filter to only comment events, sorted newest first
   const commentEvents = useMemo(() => {
@@ -80,10 +74,7 @@ export function CommentsView({
         const idMatch = event.issueId.toLowerCase().includes(searchLower);
         return textMatch || titleMatch || idMatch;
       })
-      .sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [events, searchFilter, issueMap]);
 
   return (
@@ -107,9 +98,7 @@ export function CommentsView({
         <div className="text-center py-12 text-muted-foreground">
           <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No comments found</p>
-          {searchFilter && (
-            <p className="text-sm mt-2">Try adjusting your search filter</p>
-          )}
+          {searchFilter && <p className="text-sm mt-2">Try adjusting your search filter</p>}
         </div>
       ) : (
         <div className="space-y-3">
@@ -140,40 +129,29 @@ export function CommentsView({
 interface CommentCardProps {
   event: IssueEvent;
   issue: Issue;
-  ancestry: Array<{ id: string; title: string }>;
+  ancestry: Array<{id: string; title: string}>;
   openBlockers: Issue[];
   onSelectIssue: (issue: Issue) => void;
 }
 
-function CommentCard({
-  event,
-  issue,
-  ancestry,
-  openBlockers,
-  onSelectIssue,
-}: CommentCardProps) {
+function CommentCard({event, issue, ancestry, openBlockers, onSelectIssue}: CommentCardProps) {
   const commentText = event.type === 'comment' ? event.data.text : '';
 
   return (
     <div
-      className={`rounded-lg border p-4 bg-card hover:bg-muted/50 transition-colors ${statusColors[issue.status]} border-l-4`}
+      className={`rounded-lg border p-4 bg-card hover:bg-muted/50 transition-colors ${
+        statusColors[issue.status]
+      } border-l-4`}
     >
       {/* Header: Issue ID + Title (clickable) */}
       <div className="flex items-start justify-between gap-4 mb-2">
-        <button
-          className="text-left hover:underline"
-          onClick={() => onSelectIssue(issue)}
-        >
-          <span className="font-mono text-sm text-muted-foreground">
-            {issue.id}
-          </span>
+        <button className="text-left hover:underline" onClick={() => onSelectIssue(issue)}>
+          <span className="font-mono text-sm text-muted-foreground">{issue.id}</span>
           <span className="mx-2 text-muted-foreground">·</span>
           <span className="font-medium">{issue.title}</span>
         </button>
 
-        <Badge variant={STATUS_BADGE_VARIANTS[issue.status]}>
-          {issue.status.replace('_', ' ')}
-        </Badge>
+        <Badge variant={STATUS_BADGE_VARIANTS[issue.status]}>{issue.status.replace('_', ' ')}</Badge>
       </div>
 
       {/* Parent epic / ancestry */}
@@ -181,32 +159,27 @@ function CommentCard({
         <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
           <Folder className="h-3 w-3" />
           <span>
-            {[...ancestry].reverse().map((a) => a.title).join(' → ')}
+            {[...ancestry]
+              .reverse()
+              .map((a) => a.title)
+              .join(' → ')}
           </span>
         </div>
       )}
 
       {/* Issue source */}
-      {issue.lastSource && (
-        <div className="text-xs text-muted-foreground mb-2">
-          Source: {issue.lastSource}
-        </div>
-      )}
+      {issue.lastSource && <div className="text-xs text-muted-foreground mb-2">Source: {issue.lastSource}</div>}
 
       {/* Blockers warning */}
       {openBlockers.length > 0 && (
         <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 mb-2">
           <AlertTriangle className="h-3 w-3" />
-          <span>
-            Blocked by {openBlockers.map((b) => b.id).join(', ')}
-          </span>
+          <span>Blocked by {openBlockers.map((b) => b.id).join(', ')}</span>
         </div>
       )}
 
       {/* Comment text */}
-      <div className="mt-3 text-sm whitespace-pre-wrap bg-muted/30 rounded p-3">
-        {commentText}
-      </div>
+      <div className="mt-3 text-sm whitespace-pre-wrap bg-muted/30 rounded p-3">{commentText}</div>
 
       {/* Footer: Timestamp and source */}
       <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">

@@ -1,12 +1,12 @@
-import { X } from 'lucide-react';
-import { Button } from './ui/button';
+import {X} from 'lucide-react';
+import {Button} from './ui/button';
 
 interface IssueNotFoundProps {
   issueId: string;
   onClose: () => void;
 }
 
-export function IssueNotFound({ issueId, onClose }: IssueNotFoundProps) {
+export function IssueNotFound({issueId, onClose}: IssueNotFoundProps) {
   return (
     <div className="fixed top-[65px] bottom-0 right-0 w-[500px] bg-background border-l shadow-lg overflow-y-auto">
       <div className="sticky top-0 bg-background border-b p-4 z-10">

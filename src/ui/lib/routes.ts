@@ -21,13 +21,10 @@ export interface AppRouteParams {
   issueId: string | null;
 }
 
-export function parseRouteParams(
-  viewParam: string | undefined,
-  issueIdParam: string | undefined,
-): AppRouteParams {
+export function parseRouteParams(viewParam: string | undefined, issueIdParam: string | undefined): AppRouteParams {
   const view = isAppView(viewParam) ? viewParam : 'list';
   const issueId = issueIdParam ? decodeURIComponent(issueIdParam) : null;
-  return { view, issueId };
+  return {view, issueId};
 }
 
 /** @deprecated Legacy `?view=&issue=` query URLs — used only for redirect on load */
@@ -36,7 +33,7 @@ export function parseLegacySearch(search: string): AppRouteParams {
   const viewParam = params.get('view') ?? undefined;
   const view = isAppView(viewParam) ? viewParam : 'list';
   const issueId = params.get('issue');
-  return { view, issueId: issueId || null };
+  return {view, issueId: issueId || null};
 }
 
 export function legacySearchToPath(search: string): string | null {
@@ -45,6 +42,6 @@ export function legacySearchToPath(search: string): string | null {
     return null;
   }
 
-  const { view, issueId } = parseLegacySearch(search);
+  const {view, issueId} = parseLegacySearch(search);
   return issueId ? issuePath(view, issueId) : viewPath(view);
 }

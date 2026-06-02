@@ -1,9 +1,9 @@
-import { Command } from 'commander';
-import type { Issue, IssueType, Status } from '../../shared/types.js';
-import { ISSUE_TYPES, STATUSES } from '../../shared/types.js';
-import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getIssues } from '../lib/state.js';
-import { outputIssueList, outputError } from '../lib/output.js';
+import {Command} from 'commander';
+import type {Issue, IssueType, Status} from '../../shared/types.js';
+import {ISSUE_TYPES, STATUSES} from '../../shared/types.js';
+import {getOrCreatePebbleDir} from '../lib/storage.js';
+import {getIssues} from '../lib/state.js';
+import {outputIssueList, outputError} from '../lib/output.js';
 
 function searchIssues(issues: Issue[], query: string): Issue[] {
   const lowerQuery = query.toLowerCase();

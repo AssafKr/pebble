@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { FolderSync, Plus, Trash2, X, GitBranch } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { addSource, removeSource, fetchWorktrees, type SourcesResponse, type Worktree } from '../lib/api';
+import {useState, useEffect} from 'react';
+import {toast} from 'sonner';
+import {FolderSync, Plus, Trash2, X, GitBranch} from 'lucide-react';
+import {Button} from './ui/button';
+import {Input} from './ui/input';
+import {addSource, removeSource, fetchWorktrees, type SourcesResponse, type Worktree} from '../lib/api';
 
 interface SourceManagerProps {
   sources: SourcesResponse | null;
@@ -11,7 +11,7 @@ interface SourceManagerProps {
   onClose: () => void;
 }
 
-export function SourceManager({ sources, onSourcesChange, onClose }: SourceManagerProps) {
+export function SourceManager({sources, onSourcesChange, onClose}: SourceManagerProps) {
   const [newPath, setNewPath] = useState('');
   const [loading, setLoading] = useState(false);
   const [worktrees, setWorktrees] = useState<Worktree[]>([]);
@@ -217,14 +217,8 @@ export function SourceManager({ sources, onSourcesChange, onClose }: SourceManag
             </p>
             <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
               {sources?.files.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 hover:bg-muted/50"
-                >
-                  <span
-                    className="text-sm font-mono truncate flex-1"
-                    title={file}
-                  >
+                <div key={index} className="flex items-center justify-between p-2 hover:bg-muted/50">
+                  <span className="text-sm font-mono truncate flex-1" title={file}>
                     {abbreviatePath(file)}
                   </span>
                   <Button
@@ -232,22 +226,21 @@ export function SourceManager({ sources, onSourcesChange, onClose }: SourceManag
                     size="sm"
                     onClick={() => handleRemove(index)}
                     disabled={loading || sources.files.length === 1}
-                    title={sources.files.length === 1 ? "Cannot remove the last source" : "Remove source"}
+                    title={sources.files.length === 1 ? 'Cannot remove the last source' : 'Remove source'}
                   >
                     <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                   </Button>
                 </div>
               ))}
               {!sources?.files.length && (
-                <div className="p-4 text-center text-muted-foreground text-sm">
-                  No sources configured
-                </div>
+                <div className="p-4 text-center text-muted-foreground text-sm">No sources configured</div>
               )}
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Add multiple issue files to merge them into a unified view. Issues with the same ID are merged, keeping the most recently updated version.
+            Add multiple issue files to merge them into a unified view. Issues with the same ID are merged, keeping the
+            most recently updated version.
           </p>
         </div>
       </div>

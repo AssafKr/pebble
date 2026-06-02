@@ -1,6 +1,6 @@
-import type { Issue, IssueEvent, Priority, Status, IssueType } from '../../shared/types.js';
-import { PRIORITY_LABELS, STATUS_LABELS, TYPE_LABELS } from '../../shared/types.js';
-import { formatRelativeTime } from '../../shared/time.js';
+import type {Issue, IssueEvent, Priority, Status, IssueType} from '../../shared/types.js';
+import {PRIORITY_LABELS, STATUS_LABELS, TYPE_LABELS} from '../../shared/types.js';
+import {formatRelativeTime} from '../../shared/time.js';
 
 /**
  * Limit metadata for paginated output
@@ -69,7 +69,7 @@ export interface IssueDetailContext {
   blocking: Issue[];
   children: Issue[];
   related: Issue[];
-  ancestry?: Array<{ id: string; title: string }>; // Full parent chain
+  ancestry?: Array<{id: string; title: string}>; // Full parent chain
 }
 
 /**
@@ -87,7 +87,10 @@ export function formatIssueDetailPretty(issue: Issue, ctx: IssueDetailContext): 
 
   // Show ancestry chain if available
   if (ctx.ancestry && ctx.ancestry.length > 0) {
-    const chain = [...ctx.ancestry].reverse().map(a => a.id).join(' > ');
+    const chain = [...ctx.ancestry]
+      .reverse()
+      .map((a) => a.id)
+      .join(' > ');
     lines.push(`Ancestry: ${chain}`);
   } else if (issue.parent) {
     lines.push(`Parent:   ${issue.parent}`);
@@ -101,7 +104,7 @@ export function formatIssueDetailPretty(issue: Issue, ctx: IssueDetailContext): 
 
   // Children (for epics)
   if (ctx.children.length > 0) {
-    const closedChildren = ctx.children.filter(c => c.status === 'closed');
+    const closedChildren = ctx.children.filter((c) => c.status === 'closed');
     lines.push('');
     lines.push(`Children (${closedChildren.length}/${ctx.children.length} done):`);
     for (const child of ctx.children) {
@@ -119,13 +122,13 @@ export function formatIssueDetailPretty(issue: Issue, ctx: IssueDetailContext): 
   // Blocking
   if (ctx.blocking.length > 0) {
     lines.push('');
-    lines.push(`Blocking: ${ctx.blocking.map(i => i.id).join(', ')}`);
+    lines.push(`Blocking: ${ctx.blocking.map((i) => i.id).join(', ')}`);
   }
 
   // Related issues
   if (ctx.related.length > 0) {
     lines.push('');
-    lines.push(`Related: ${ctx.related.map(r => r.id).join(', ')}`);
+    lines.push(`Related: ${ctx.related.map((r) => r.id).join(', ')}`);
   }
 
   // Comments
@@ -156,10 +159,10 @@ export function outputIssueDetail(issue: Issue, ctx: IssueDetailContext, pretty:
     // Include all context in JSON output
     const output = {
       ...issue,
-      blocking: ctx.blocking.map(i => i.id),
-      children: ctx.children.map(i => ({ id: i.id, title: i.title, status: i.status })),
-      related: ctx.related.map(i => i.id),
-      ...(ctx.ancestry && ctx.ancestry.length > 0 && { ancestry: ctx.ancestry }),
+      blocking: ctx.blocking.map((i) => i.id),
+      children: ctx.children.map((i) => ({id: i.id, title: i.title, status: i.status})),
+      related: ctx.related.map((i) => i.id),
+      ...(ctx.ancestry && ctx.ancestry.length > 0 && {ancestry: ctx.ancestry}),
     };
     console.log(formatJson(output));
   }
@@ -265,7 +268,7 @@ export function formatDepsPretty(
  */
 export function formatError(error: Error | string): string {
   const message = error instanceof Error ? error.message : error;
-  return JSON.stringify({ error: message });
+  return JSON.stringify({error: message});
 }
 
 /**
@@ -280,8 +283,8 @@ export function formatErrorPretty(error: Error | string): string {
  * Extra info that can be included in mutation responses
  */
 export interface MutationExtra {
-  parentsReopened?: Array<{ id: string; title: string }>;
-  blockersReopened?: Array<{ id: string; title: string }>;
+  parentsReopened?: Array<{id: string; title: string}>;
+  blockersReopened?: Array<{id: string; title: string}>;
 }
 
 /**
@@ -291,11 +294,11 @@ export function outputMutationSuccess(id: string, pretty: boolean, extra?: Mutat
   if (pretty) {
     const notes: string[] = [];
     if (extra?.parentsReopened?.length) {
-      const ids = extra.parentsReopened.map(p => p.id).join(', ');
+      const ids = extra.parentsReopened.map((p) => p.id).join(', ');
       notes.push(`reopened: ${ids}`);
     }
     if (extra?.blockersReopened?.length) {
-      const ids = extra.blockersReopened.map(b => b.id).join(', ');
+      const ids = extra.blockersReopened.map((b) => b.id).join(', ');
       notes.push(`blocker${extra.blockersReopened.length > 1 ? 's' : ''} ${ids} reopened`);
     }
     if (notes.length > 0) {
@@ -304,7 +307,7 @@ export function outputMutationSuccess(id: string, pretty: boolean, extra?: Mutat
       console.log(`✓ ${id}`);
     }
   } else {
-    const result: Record<string, unknown> = { id, success: true };
+    const result: Record<string, unknown> = {id, success: true};
     if (extra?.parentsReopened?.length) {
       result._parentsReopened = extra.parentsReopened;
     }
@@ -327,7 +330,7 @@ export function outputIssueList(issues: Issue[], pretty: boolean, limitInfo?: Li
   } else {
     // Only include _meta when results are actually limited
     if (limitInfo?.limited) {
-      console.log(formatJson({ issues, _meta: limitInfo }));
+      console.log(formatJson({issues, _meta: limitInfo}));
     } else {
       console.log(formatJson(issues));
     }
@@ -368,9 +371,7 @@ export function buildIssueTree(issues: Issue[]): IssueTreeNode[] {
 
   // Build tree nodes recursively
   const buildNode = (issue: Issue): IssueTreeNode => {
-    const children = issues
-      .filter((i) => i.parent === issue.id)
-      .map(buildNode);
+    const children = issues.filter((i) => i.parent === issue.id).map(buildNode);
 
     return {
       id: issue.id,
@@ -381,7 +382,7 @@ export function buildIssueTree(issues: Issue[]): IssueTreeNode[] {
       createdAt: issue.createdAt,
       statusChangedAt: issue.statusChangedAt,
       childrenCount: children.length,
-      ...(children.length > 0 && { children }),
+      ...(children.length > 0 && {children}),
     };
   };
 
@@ -415,9 +416,13 @@ export function formatIssueTreePretty(nodes: IssueTreeNode[], sectionHeader?: st
     const connector = isRoot ? '' : isLast ? '└─ ' : '├─ ';
     const statusIcon = node.status === 'closed' ? '✓' : node.status === 'in_progress' ? '▶' : '○';
     const statusText = STATUS_LABELS[node.status as Status].toLowerCase();
-    const relativeTime = node.statusChangedAt ? formatRelativeTime(node.statusChangedAt) : formatRelativeTime(node.createdAt);
+    const relativeTime = node.statusChangedAt
+      ? formatRelativeTime(node.statusChangedAt)
+      : formatRelativeTime(node.createdAt);
 
-    lines.push(`${prefix}${connector}${statusIcon} ${node.id}: ${node.title} [${node.type}] P${node.priority} ${statusText} ${relativeTime}`);
+    lines.push(
+      `${prefix}${connector}${statusIcon} ${node.id}: ${node.title} [${node.type}] P${node.priority} ${statusText} ${relativeTime}`
+    );
 
     const children = node.children ?? [];
     const childPrefix = isRoot ? '' : prefix + (isLast ? '   ' : '│  ');
@@ -451,7 +456,7 @@ export function outputIssueTree(issues: Issue[], pretty: boolean, sectionHeader?
   } else {
     // Only include _meta when results are actually limited
     if (limitInfo?.limited) {
-      console.log(formatJson({ issues: tree, _meta: limitInfo }));
+      console.log(formatJson({issues: tree, _meta: limitInfo}));
     } else {
       console.log(formatJson(tree));
     }
@@ -478,7 +483,7 @@ export interface VerboseIssueInfo {
   blocking: string[];
   children: number;
   blockers?: string[]; // For blocked command: open blockers
-  ancestry: Array<{ id: string; title: string }>; // Full parent chain (parent → grandparent → root)
+  ancestry: Array<{id: string; title: string}>; // Full parent chain (parent → grandparent → root)
 }
 
 /**
@@ -498,15 +503,24 @@ export function formatIssueListVerbose(issues: VerboseIssueInfo[], sectionHeader
   }
 
   for (const info of issues) {
-    const { issue, blocking, children, blockers, ancestry } = info;
+    const {issue, blocking, children, blockers, ancestry} = info;
 
-    const statusTime = issue.statusChangedAt ? formatRelativeTime(issue.statusChangedAt) : formatRelativeTime(issue.createdAt);
+    const statusTime = issue.statusChangedAt
+      ? formatRelativeTime(issue.statusChangedAt)
+      : formatRelativeTime(issue.createdAt);
     lines.push(`${issue.id}: ${issue.title}`);
-    lines.push(`  Type: ${formatType(issue.type)} | Priority: P${issue.priority} | Status: ${formatStatus(issue.status)} (${statusTime})`);
+    lines.push(
+      `  Type: ${formatType(issue.type)} | Priority: P${issue.priority} | Status: ${formatStatus(
+        issue.status
+      )} (${statusTime})`
+    );
 
     // Show ancestry chain if available (reversed: root > ... > parent)
     if (ancestry.length > 0) {
-      const chain = [...ancestry].reverse().map(a => a.title).join(' → ');
+      const chain = [...ancestry]
+        .reverse()
+        .map((a) => a.title)
+        .join(' → ');
       lines.push(`  Ancestry: ${chain}`);
     }
 
@@ -532,7 +546,12 @@ export function formatIssueListVerbose(issues: VerboseIssueInfo[], sectionHeader
 /**
  * Output a list of issues with verbose details
  */
-export function outputIssueListVerbose(issues: VerboseIssueInfo[], pretty: boolean, sectionHeader?: string, limitInfo?: LimitInfo): void {
+export function outputIssueListVerbose(
+  issues: VerboseIssueInfo[],
+  pretty: boolean,
+  sectionHeader?: string,
+  limitInfo?: LimitInfo
+): void {
   if (pretty) {
     console.log(formatIssueListVerbose(issues, sectionHeader));
     if (limitInfo?.limited) {
@@ -540,16 +559,16 @@ export function outputIssueListVerbose(issues: VerboseIssueInfo[], pretty: boole
     }
   } else {
     // JSON output includes all fields
-    const output = issues.map(({ issue, blocking, children, blockers, ancestry }) => ({
+    const output = issues.map(({issue, blocking, children, blockers, ancestry}) => ({
       ...issue,
       blocking,
       childrenCount: issue.type === 'epic' ? children : undefined,
-      ...(blockers && { openBlockers: blockers }),
-      ...(ancestry.length > 0 && { ancestry }),
+      ...(blockers && {openBlockers: blockers}),
+      ...(ancestry.length > 0 && {ancestry}),
     }));
     // Only include _meta when results are actually limited
     if (limitInfo?.limited) {
-      console.log(formatJson({ issues: output, _meta: limitInfo }));
+      console.log(formatJson({issues: output, _meta: limitInfo}));
     } else {
       console.log(formatJson(output));
     }

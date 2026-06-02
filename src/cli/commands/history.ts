@@ -1,9 +1,9 @@
-import { Command } from 'commander';
-import type { EventType } from '../../shared/types.js';
-import { EVENT_TYPES } from '../../shared/types.js';
-import { getOrCreatePebbleDir, readEvents } from '../lib/storage.js';
-import { computeState } from '../lib/state.js';
-import { outputError, formatJson } from '../lib/output.js';
+import {Command} from 'commander';
+import type {EventType} from '../../shared/types.js';
+import {EVENT_TYPES} from '../../shared/types.js';
+import {getOrCreatePebbleDir, readEvents} from '../lib/storage.js';
+import {computeState} from '../lib/state.js';
+import {outputError, formatJson} from '../lib/output.js';
 
 interface HistoryEntry {
   timestamp: string;
@@ -111,15 +111,11 @@ export function historyCommand(program: Command): void {
         if (options.since !== undefined) {
           const sinceMs = parseDuration(options.since);
           const cutoff = Date.now() - sinceMs;
-          filteredEvents = filteredEvents.filter(
-            (e) => new Date(e.timestamp).getTime() >= cutoff
-          );
+          filteredEvents = filteredEvents.filter((e) => new Date(e.timestamp).getTime() >= cutoff);
         }
 
         // Sort by timestamp descending (newest first)
-        filteredEvents.sort(
-          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        );
+        filteredEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
         // Apply limit
         const limit = parseInt(options.limit, 10);
@@ -153,9 +149,9 @@ export function historyCommand(program: Command): void {
 
           // Add event-specific details
           if (event.type === 'close' && event.data.reason) {
-            entry.details = { reason: event.data.reason };
+            entry.details = {reason: event.data.reason};
           } else if (event.type === 'comment') {
-            entry.details = { text: event.data.text };
+            entry.details = {text: event.data.text};
           }
 
           return entry;

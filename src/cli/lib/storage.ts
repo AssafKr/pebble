@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import type { IssueEvent, PebbleConfig } from '../../shared/types.js';
-import { derivePrefix } from './id.js';
-import { getMainWorktreeRoot, getCurrentWorktreeName } from './git.js';
+import type {IssueEvent, PebbleConfig} from '../../shared/types.js';
+import {derivePrefix} from './id.js';
+import {getMainWorktreeRoot, getCurrentWorktreeName} from './git.js';
 
 const PEBBLE_DIR = '.pebble';
 const ISSUES_FILE = 'issues.jsonl';
@@ -135,7 +135,7 @@ export function ensurePebbleDir(baseDir: string = process.cwd()): string {
   const pebbleDir = path.join(targetDir, PEBBLE_DIR);
 
   if (!fs.existsSync(pebbleDir)) {
-    fs.mkdirSync(pebbleDir, { recursive: true });
+    fs.mkdirSync(pebbleDir, {recursive: true});
 
     // Create initial config with worktree support enabled by default
     const folderName = path.basename(targetDir);
@@ -189,7 +189,7 @@ export function getEventSource(): string {
 export function appendEvent(event: IssueEvent, pebbleDir?: string): void {
   const issuesPath = getIssuesPath(pebbleDir);
   // Add source if not already present
-  const eventWithSource = event.source ? event : { ...event, source: getEventSource() };
+  const eventWithSource = event.source ? event : {...event, source: getEventSource()};
   const line = JSON.stringify(eventWithSource) + '\n';
   fs.appendFileSync(issuesPath, line, 'utf-8');
 }

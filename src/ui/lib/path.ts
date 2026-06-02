@@ -21,13 +21,13 @@ export function getCommonPrefix(paths: string[]): string {
   }
 
   // Split all paths into segments
-  const splitPaths = paths.map(p => p.split('/'));
-  const minLength = Math.min(...splitPaths.map(p => p.length));
+  const splitPaths = paths.map((p) => p.split('/'));
+  const minLength = Math.min(...splitPaths.map((p) => p.length));
 
   let commonPrefix = '';
   for (let i = 0; i < minLength; i++) {
     const segment = splitPaths[0][i];
-    if (splitPaths.every(p => p[i] === segment)) {
+    if (splitPaths.every((p) => p[i] === segment)) {
       commonPrefix += segment + '/';
     } else {
       break;

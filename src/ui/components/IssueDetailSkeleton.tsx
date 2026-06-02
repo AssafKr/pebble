@@ -1,12 +1,12 @@
-import { Loader2, X } from 'lucide-react';
-import { Button } from './ui/button';
+import {Loader2, X} from 'lucide-react';
+import {Button} from './ui/button';
 
 interface IssueDetailSkeletonProps {
   issueId?: string | null;
   onClose?: () => void;
 }
 
-export function IssueDetailSkeleton({ issueId, onClose }: IssueDetailSkeletonProps) {
+export function IssueDetailSkeleton({issueId, onClose}: IssueDetailSkeletonProps) {
   return (
     <div className="fixed top-[65px] bottom-0 right-0 w-[500px] bg-background border-l shadow-lg overflow-y-auto animate-in fade-in duration-200">
       <div className="sticky top-0 bg-background border-b p-4 z-10">

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { issuesDataQueryKey } from '../lib/issuesQueries';
+import {useEffect} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
+import {issuesDataQueryKey} from '../lib/issuesQueries';
 
 export function IssuesStreamSubscriber() {
   const queryClient = useQueryClient();
@@ -12,7 +12,7 @@ export function IssuesStreamSubscriber() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'change') {
-          void queryClient.invalidateQueries({ queryKey: issuesDataQueryKey });
+          void queryClient.invalidateQueries({queryKey: issuesDataQueryKey});
         }
       } catch {
         // Ignore parse errors

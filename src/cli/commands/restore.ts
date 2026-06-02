@@ -1,8 +1,8 @@
-import { Command } from 'commander';
-import type { RestoreEvent } from '../../shared/types.js';
-import { getOrCreatePebbleDir, appendEvent } from '../lib/storage.js';
-import { getIssue, resolveId } from '../lib/state.js';
-import { outputError, formatJson } from '../lib/output.js';
+import {Command} from 'commander';
+import type {RestoreEvent} from '../../shared/types.js';
+import {getOrCreatePebbleDir, appendEvent} from '../lib/storage.js';
+import {getIssue, resolveId} from '../lib/state.js';
+import {outputError, formatJson} from '../lib/output.js';
 
 export function restoreCommand(program: Command): void {
   program
@@ -16,8 +16,12 @@ export function restoreCommand(program: Command): void {
         const pebbleDir = getOrCreatePebbleDir();
 
         // Support comma-separated IDs
-        const allIds = ids
-          .flatMap((id) => id.split(',').map((s) => s.trim()).filter(Boolean));
+        const allIds = ids.flatMap((id) =>
+          id
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        );
 
         if (allIds.length === 0) {
           throw new Error('No issue IDs provided');
@@ -37,12 +41,12 @@ export function restoreCommand(program: Command): void {
             const issue = getIssue(resolvedId, true); // includeDeleted=true to find deleted issues
 
             if (!issue) {
-              results.push({ id, success: false, error: `Issue not found: ${id}` });
+              results.push({id, success: false, error: `Issue not found: ${id}`});
               continue;
             }
 
             if (!issue.deleted) {
-              results.push({ id: resolvedId, success: false, error: `Issue is not deleted: ${resolvedId}` });
+              results.push({id: resolvedId, success: false, error: `Issue is not deleted: ${resolvedId}`});
               continue;
             }
 
@@ -56,9 +60,9 @@ export function restoreCommand(program: Command): void {
             };
 
             appendEvent(restoreEvent, pebbleDir);
-            results.push({ id: resolvedId, success: true });
+            results.push({id: resolvedId, success: true});
           } catch (error) {
-            results.push({ id, success: false, error: (error as Error).message });
+            results.push({id, success: false, error: (error as Error).message});
           }
         }
 
@@ -69,7 +73,7 @@ export function restoreCommand(program: Command): void {
             if (pretty) {
               console.log(`↩️  ${result.id} restored`);
             } else {
-              console.log(formatJson({ id: result.id, success: true }));
+              console.log(formatJson({id: result.id, success: true}));
             }
           } else {
             throw new Error(result.error || 'Unknown error');
@@ -84,14 +88,14 @@ export function restoreCommand(program: Command): void {
               }
             }
           } else {
-            console.log(formatJson({
-              restored: results.filter((r) => r.success).map((r) => r.id),
-              ...(results.some((r) => !r.success) && {
-                errors: results
-                  .filter((r) => !r.success)
-                  .map((r) => ({ id: r.id, error: r.error })),
-              }),
-            }));
+            console.log(
+              formatJson({
+                restored: results.filter((r) => r.success).map((r) => r.id),
+                ...(results.some((r) => !r.success) && {
+                  errors: results.filter((r) => !r.success).map((r) => ({id: r.id, error: r.error})),
+                }),
+              })
+            );
           }
         }
       } catch (error) {

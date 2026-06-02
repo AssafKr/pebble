@@ -1,14 +1,22 @@
-import React, { useState, useMemo } from 'react';
-import type { IssueEvent, Issue } from '../../shared/types';
+import React, {useState, useMemo} from 'react';
+import type {IssueEvent, Issue} from '../../shared/types';
+import {TYPE_BADGE_VARIANTS, PRIORITY_DISPLAY_LABELS} from '../../shared/types';
+import {Input} from './ui/input';
+import {Select} from './ui/select';
+import {Badge} from './ui/badge';
 import {
-  TYPE_BADGE_VARIANTS,
-  PRIORITY_DISPLAY_LABELS,
-} from '../../shared/types';
-import { Input } from './ui/input';
-import { Select } from './ui/select';
-import { Badge } from './ui/badge';
-import { Clock, Plus, Edit, XCircle, RefreshCw, MessageSquare, Folder, ChevronRight, Trash2, RotateCcw } from 'lucide-react';
-import { formatRelativeTime } from '../../shared/time';
+  Clock,
+  Plus,
+  Edit,
+  XCircle,
+  RefreshCw,
+  MessageSquare,
+  Folder,
+  ChevronRight,
+  Trash2,
+  RotateCcw,
+} from 'lucide-react';
+import {formatRelativeTime} from '../../shared/time';
 
 interface EventGroup {
   issueId: string;
@@ -82,10 +90,7 @@ export interface EventTimelineProps {
   onIssueFilterChange?: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const eventTypeConfig: Record<
-  string,
-  { icon: React.ReactNode; label: string; color: string }
-> = {
+const eventTypeConfig: Record<string, {icon: React.ReactNode; label: string; color: string}> = {
   create: {
     icon: <Plus className="h-4 w-4" />,
     label: 'Created',
@@ -133,14 +138,10 @@ function formatEventData(event: IssueEvent): string {
         .map(([key, value]) => {
           // Format specific fields more readably
           if (key === 'relatedTo' && Array.isArray(value)) {
-            return value.length > 0
-              ? `related to: ${value.join(', ')}`
-              : 'related issues cleared';
+            return value.length > 0 ? `related to: ${value.join(', ')}` : 'related issues cleared';
           }
           if (key === 'blockedBy' && Array.isArray(value)) {
-            return value.length > 0
-              ? `blocked by: ${value.join(', ')}`
-              : 'blockers cleared';
+            return value.length > 0 ? `blocked by: ${value.join(', ')}` : 'blockers cleared';
           }
           if (key === 'parent') {
             return value ? `parent: ${value}` : 'parent cleared';
@@ -212,11 +213,7 @@ export function EventTimeline({
   const issueFilter = issueFilterProp ?? issueFilterInternal;
   const setIssueFilter = onIssueFilterChange ?? setIssueFilterInternal;
 
-  const issueMap = useMemo(
-    () => new Map(issues.map((i) => [i.id, i])),
-    [issues]
-  );
-
+  const issueMap = useMemo(() => new Map(issues.map((i) => [i.id, i])), [issues]);
 
   // Pre-filter events by issueIds if provided
   const scopedEvents = useMemo(() => {
@@ -252,10 +249,7 @@ export function EventTimeline({
 
         return true;
       })
-      .sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     // Apply maxEvents limit
     if (maxEvents && result.length > maxEvents) {
@@ -272,10 +266,7 @@ export function EventTimeline({
   }, [issues, issueIds]);
 
   // Group consecutive events by issueId
-  const eventGroups = useMemo(
-    () => groupConsecutiveEvents(filteredEvents),
-    [filteredEvents]
-  );
+  const eventGroups = useMemo(() => groupConsecutiveEvents(filteredEvents), [filteredEvents]);
 
   // Compute reverse lookup: what each issue blocks (issues that have this issue in blockedBy)
   const blockingMap = useMemo(() => {
@@ -301,10 +292,7 @@ export function EventTimeline({
               onChange={(e) => setSearchFilter(e.target.value)}
               className="max-w-sm"
             />
-            <Select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-            >
+            <Select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
               <option value="">All Event Types</option>
               <option value="create">Create</option>
               <option value="update">Update</option>
@@ -313,10 +301,7 @@ export function EventTimeline({
               <option value="comment">Comment</option>
             </Select>
             {!issueIds && (
-              <Select
-                value={issueFilter}
-                onChange={(e) => setIssueFilter(e.target.value)}
-              >
+              <Select value={issueFilter} onChange={(e) => setIssueFilter(e.target.value)}>
                 <option value="">All Issues</option>
                 {dropdownIssues.map((issue) => (
                   <option key={issue.id} value={issue.id}>
@@ -364,21 +349,24 @@ export function EventTimeline({
                               {group.issueId}
                             </button>
                           ) : (
-                            <span className="text-sm font-mono text-muted-foreground">
-                              {group.issueId}
-                            </span>
+                            <span className="text-sm font-mono text-muted-foreground">{group.issueId}</span>
                           )}
                           {issue && (
                             <>
-                              <Badge variant={TYPE_BADGE_VARIANTS[issue.type as keyof typeof TYPE_BADGE_VARIANTS]} className="text-xs">
+                              <Badge
+                                variant={TYPE_BADGE_VARIANTS[issue.type as keyof typeof TYPE_BADGE_VARIANTS]}
+                                className="text-xs"
+                              >
                                 {issue.type}
                               </Badge>
-                              <span className={`text-xs ${issue.priority <= 1 ? 'font-semibold text-red-600' : 'text-muted-foreground'}`}>
+                              <span
+                                className={`text-xs ${
+                                  issue.priority <= 1 ? 'font-semibold text-red-600' : 'text-muted-foreground'
+                                }`}
+                              >
                                 {PRIORITY_DISPLAY_LABELS[issue.priority as keyof typeof PRIORITY_DISPLAY_LABELS]}
                               </span>
-                              <span className="text-sm text-muted-foreground">
-                                — {issue.title}
-                              </span>
+                              <span className="text-sm text-muted-foreground">— {issue.title}</span>
                             </>
                           )}
                           <Badge variant="secondary" className="text-xs">
@@ -487,7 +475,9 @@ export function EventTimeline({
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 {hasMultipleEvents && (
-                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center ${config.color}`}>
+                                  <div
+                                    className={`w-5 h-5 rounded-full flex items-center justify-center ${config.color}`}
+                                  >
                                     {config.icon}
                                   </div>
                                 )}
@@ -505,21 +495,28 @@ export function EventTimeline({
                                         {event.issueId}
                                       </button>
                                     ) : (
-                                      <span className="text-sm font-mono text-muted-foreground">
-                                        {event.issueId}
-                                      </span>
+                                      <span className="text-sm font-mono text-muted-foreground">{event.issueId}</span>
                                     )}
                                     {issue && (
                                       <>
-                                        <Badge variant={TYPE_BADGE_VARIANTS[issue.type as keyof typeof TYPE_BADGE_VARIANTS]} className="text-xs">
+                                        <Badge
+                                          variant={TYPE_BADGE_VARIANTS[issue.type as keyof typeof TYPE_BADGE_VARIANTS]}
+                                          className="text-xs"
+                                        >
                                           {issue.type}
                                         </Badge>
-                                        <span className={`text-xs ${issue.priority <= 1 ? 'font-semibold text-red-600' : 'text-muted-foreground'}`}>
-                                          {PRIORITY_DISPLAY_LABELS[issue.priority as keyof typeof PRIORITY_DISPLAY_LABELS]}
+                                        <span
+                                          className={`text-xs ${
+                                            issue.priority <= 1 ? 'font-semibold text-red-600' : 'text-muted-foreground'
+                                          }`}
+                                        >
+                                          {
+                                            PRIORITY_DISPLAY_LABELS[
+                                              issue.priority as keyof typeof PRIORITY_DISPLAY_LABELS
+                                            ]
+                                          }
                                         </span>
-                                        <span className="text-sm text-muted-foreground">
-                                          — {issue.title}
-                                        </span>
+                                        <span className="text-sm text-muted-foreground">— {issue.title}</span>
                                       </>
                                     )}
                                     {event.source && (
@@ -534,38 +531,40 @@ export function EventTimeline({
                                   </>
                                 )}
                               </div>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground" title={new Date(event.timestamp).toLocaleString()}>
+                              <div
+                                className="flex items-center gap-1 text-xs text-muted-foreground"
+                                title={new Date(event.timestamp).toLocaleString()}
+                              >
                                 <Clock className="h-3 w-3" />
                                 {formatRelativeTime(event.timestamp)}
                               </div>
                             </div>
 
                             {/* Parent chain for single-event groups */}
-                            {!hasMultipleEvents && (() => {
-                              const parentChain = getParentChain(group.issueId, issueMap);
-                              if (parentChain.length === 0) return null;
-                              const reversed = [...parentChain].reverse(); // root → ... → immediate parent
-                              return (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                  <span>Parent:</span>
-                                  {reversed.map((parent, idx) => (
-                                    <span key={parent.id} className="flex items-center">
-                                      {idx > 0 && <ChevronRight className="h-3 w-3 mx-0.5" />}
-                                      <button
-                                        className="text-primary hover:underline font-mono"
-                                        onClick={() => onSelectIssue(parent)}
-                                      >
-                                        {parent.id}
-                                      </button>
-                                    </span>
-                                  ))}
-                                </div>
-                              );
-                            })()}
+                            {!hasMultipleEvents &&
+                              (() => {
+                                const parentChain = getParentChain(group.issueId, issueMap);
+                                if (parentChain.length === 0) return null;
+                                const reversed = [...parentChain].reverse(); // root → ... → immediate parent
+                                return (
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                    <span>Parent:</span>
+                                    {reversed.map((parent, idx) => (
+                                      <span key={parent.id} className="flex items-center">
+                                        {idx > 0 && <ChevronRight className="h-3 w-3 mx-0.5" />}
+                                        <button
+                                          className="text-primary hover:underline font-mono"
+                                          onClick={() => onSelectIssue(parent)}
+                                        >
+                                          {parent.id}
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
 
-                            <p className="text-sm text-muted-foreground">
-                              {formatEventData(event)}
-                            </p>
+                            <p className="text-sm text-muted-foreground">{formatEventData(event)}</p>
                           </div>
                         </div>
                       );

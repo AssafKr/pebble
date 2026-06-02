@@ -1,10 +1,10 @@
-import { Command } from 'commander';
-import type { IssueType, Priority, CreateEvent, UpdateEvent, ReopenEvent } from '../../shared/types.js';
-import { ISSUE_TYPES, PRIORITIES } from '../../shared/types.js';
-import { getOrCreatePebbleDir, getConfig, appendEvent } from '../lib/storage.js';
-import { generateId } from '../lib/id.js';
-import { getIssue, resolveId, getComputedState } from '../lib/state.js';
-import { outputMutationSuccess, outputError } from '../lib/output.js';
+import {Command} from 'commander';
+import type {IssueType, Priority, CreateEvent, UpdateEvent, ReopenEvent} from '../../shared/types.js';
+import {ISSUE_TYPES, PRIORITIES} from '../../shared/types.js';
+import {getOrCreatePebbleDir, getConfig, appendEvent} from '../lib/storage.js';
+import {generateId} from '../lib/id.js';
+import {getIssue, resolveId, getComputedState} from '../lib/state.js';
+import {outputMutationSuccess, outputError} from '../lib/output.js';
 
 export function createCommand(program: Command): void {
   program
@@ -16,11 +16,14 @@ export function createCommand(program: Command): void {
     .option('--parent <id>', 'Parent issue ID')
     .option('--blocked-by <ids>', 'Comma-separated IDs of issues that block this one')
     .option('--blocks <ids>', 'Comma-separated IDs of issues this one will block')
-    .addHelpText('after', `
+    .addHelpText(
+      'after',
+      `
 Notes:
   IDs support partial matching (e.g., "abc" matches "PROJ-abc123")
   Creating a child under a closed parent auto-reopens the parent chain
-`)
+`
+    )
     .action(async (title: string, options) => {
       const pretty = program.opts().pretty ?? false;
 
@@ -43,7 +46,7 @@ Notes:
 
         // Resolve parent if provided
         let parentId: string | undefined;
-        const parentsReopened: Array<{ id: string; title: string }> = [];
+        const parentsReopened: Array<{id: string; title: string}> = [];
         if (options.parent) {
           parentId = resolveId(options.parent);
           const parent = getIssue(parentId);
@@ -59,10 +62,10 @@ Notes:
                 type: 'reopen',
                 issueId: current.id,
                 timestamp: new Date().toISOString(),
-                data: { reason: 'Reopened to add descendant' },
+                data: {reason: 'Reopened to add descendant'},
               };
               appendEvent(reopenEvent, pebbleDir);
-              parentsReopened.push({ id: current.id, title: current.title });
+              parentsReopened.push({id: current.id, title: current.title});
             }
             current = current.parent ? state.get(current.parent) : undefined;
           }
@@ -70,9 +73,12 @@ Notes:
 
         // Resolve --blocked-by (issues that block this new issue)
         const blockedByIds: string[] = [];
-        const blockersReopened: Array<{ id: string; title: string }> = [];
+        const blockersReopened: Array<{id: string; title: string}> = [];
         if (options.blockedBy) {
-          const ids = options.blockedBy.split(',').map((s: string) => s.trim()).filter(Boolean);
+          const ids = options.blockedBy
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean);
           for (const rawId of ids) {
             const resolvedId = resolveId(rawId);
             const blocker = getIssue(resolvedId);
@@ -85,10 +91,10 @@ Notes:
                 type: 'reopen',
                 issueId: resolvedId,
                 timestamp: new Date().toISOString(),
-                data: { reason: 'Reopened to block new issue' },
+                data: {reason: 'Reopened to block new issue'},
               };
               appendEvent(reopenEvent, pebbleDir);
-              blockersReopened.push({ id: resolvedId, title: blocker.title });
+              blockersReopened.push({id: resolvedId, title: blocker.title});
             }
             blockedByIds.push(resolvedId);
           }
@@ -97,7 +103,10 @@ Notes:
         // Resolve --blocks (issues this new issue will block)
         const blocksIds: string[] = [];
         if (options.blocks) {
-          const ids = options.blocks.split(',').map((s: string) => s.trim()).filter(Boolean);
+          const ids = options.blocks
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean);
           for (const rawId of ids) {
             const resolvedId = resolveId(rawId);
             const blocked = getIssue(resolvedId);
@@ -145,7 +154,7 @@ Notes:
             type: 'update',
             issueId: id,
             timestamp: new Date().toISOString(),
-            data: { blockedBy: blockedByIds },
+            data: {blockedBy: blockedByIds},
           };
           appendEvent(depEvent, pebbleDir);
         }
@@ -158,15 +167,19 @@ Notes:
             type: 'update',
             issueId: targetId,
             timestamp: new Date().toISOString(),
-            data: { blockedBy: [...existingBlockers, id] },
+            data: {blockedBy: [...existingBlockers, id]},
           };
           appendEvent(depEvent, pebbleDir);
         }
 
         // Output success
-        const extra = (parentsReopened.length > 0 || blockersReopened.length > 0)
-          ? { parentsReopened: parentsReopened.length > 0 ? parentsReopened : undefined, blockersReopened: blockersReopened.length > 0 ? blockersReopened : undefined }
-          : undefined;
+        const extra =
+          parentsReopened.length > 0 || blockersReopened.length > 0
+            ? {
+                parentsReopened: parentsReopened.length > 0 ? parentsReopened : undefined,
+                blockersReopened: blockersReopened.length > 0 ? blockersReopened : undefined,
+              }
+            : undefined;
         outputMutationSuccess(id, pretty, extra);
       } catch (error) {
         outputError(error as Error, pretty);

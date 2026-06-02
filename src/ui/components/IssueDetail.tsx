@@ -1,28 +1,16 @@
-import { useEffect, useMemo, useState, type RefObject } from 'react';
-import { toast } from 'sonner';
-import { cn } from '../lib/utils';
-import type { Issue, Status, Priority, IssueEvent } from '../../shared/types';
-import {
-  STATUS_BADGE_VARIANTS,
-  PRIORITY_DISPLAY_LABELS,
-  STATUSES,
-  PRIORITIES,
-  STATUS_LABELS,
-} from '../../shared/types';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Select } from './ui/select';
-import { Textarea } from './ui/textarea';
-import { Label } from './ui/label';
-import { IssueSelector } from './ui/issue-selector';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from './ui/dialog';
+import {useEffect, useMemo, useState, type RefObject} from 'react';
+import {toast} from 'sonner';
+import {cn} from '../lib/utils';
+import type {Issue, Status, Priority, IssueEvent} from '../../shared/types';
+import {STATUS_BADGE_VARIANTS, PRIORITY_DISPLAY_LABELS, STATUSES, PRIORITIES, STATUS_LABELS} from '../../shared/types';
+import {Badge} from './ui/badge';
+import {Button} from './ui/button';
+import {Input} from './ui/input';
+import {Select} from './ui/select';
+import {Textarea} from './ui/textarea';
+import {Label} from './ui/label';
+import {IssueSelector} from './ui/issue-selector';
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from './ui/dialog';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -51,9 +39,9 @@ import {
   Link2,
   Trash2,
 } from 'lucide-react';
-import { EventTimeline } from './EventTimeline';
-import { formatRelativeTime } from '../../shared/time';
-import { sortByStatus, sortByDependencies } from '../lib/sort';
+import {EventTimeline} from './EventTimeline';
+import {formatRelativeTime} from '../../shared/time';
+import {sortByStatus, sortByDependencies} from '../lib/sort';
 import {
   updateIssue,
   closeIssue,
@@ -86,11 +74,7 @@ export function IssueDetail({
   commentInputRef,
 }: IssueDetailProps) {
   // Create lookup map for O(1) issue access
-  const issueMap = useMemo(
-    () => new Map(allIssues.map((i) => [i.id, i])),
-    [allIssues]
-  );
-
+  const issueMap = useMemo(() => new Map(allIssues.map((i) => [i.id, i])), [allIssues]);
 
   // Editing states
   const [editingTitle, setEditingTitle] = useState(false);
@@ -139,9 +123,7 @@ export function IssueDetail({
 
   // BlockedBy: sorted by dependencies (blockers' blockers first)
   const blockedByIssues = useMemo(() => {
-    const blockers = issue.blockedBy
-      .map((id) => issueMap.get(id))
-      .filter((i): i is Issue => i !== undefined);
+    const blockers = issue.blockedBy.map((id) => issueMap.get(id)).filter((i): i is Issue => i !== undefined);
     return sortByDependencies(blockers);
   }, [issue.blockedBy, issueMap]);
 
@@ -151,7 +133,7 @@ export function IssueDetail({
   }, [blockedByIssues]);
 
   // Check if any ancestor is blocked (also prevents setting status to in_progress)
-  const blockedAncestor = useMemo((): { ancestor: Issue; blockers: Issue[] } | null => {
+  const blockedAncestor = useMemo((): {ancestor: Issue; blockers: Issue[]} | null => {
     let current = issue;
     while (current.parent) {
       const parent = issueMap.get(current.parent);
@@ -162,7 +144,7 @@ export function IssueDetail({
         .filter((i): i is Issue => i !== undefined && i.status !== 'closed' && !i.deleted);
 
       if (openBlockers.length > 0) {
-        return { ancestor: parent, blockers: openBlockers };
+        return {ancestor: parent, blockers: openBlockers};
       }
       current = parent;
     }
@@ -186,24 +168,18 @@ export function IssueDetail({
 
   // Available issues for blocker selection (not self, not already blocking)
   const availableBlockers = useMemo(() => {
-    return allIssues.filter(
-      (i) => i.id !== issue.id && !issue.blockedBy.includes(i.id) && i.status !== 'closed'
-    );
+    return allIssues.filter((i) => i.id !== issue.id && !issue.blockedBy.includes(i.id) && i.status !== 'closed');
   }, [allIssues, issue.id, issue.blockedBy]);
 
   // Related issues (bidirectional, non-blocking)
   const relatedIssues = useMemo(() => {
-    return (issue.relatedTo || [])
-      .map((id) => issueMap.get(id))
-      .filter((i): i is Issue => i !== undefined);
+    return (issue.relatedTo || []).map((id) => issueMap.get(id)).filter((i): i is Issue => i !== undefined);
   }, [issue.relatedTo, issueMap]);
 
   // Available issues for related selection (not self, not already related)
   const availableRelated = useMemo(() => {
     const relatedSet = new Set(issue.relatedTo || []);
-    return allIssues.filter(
-      (i) => i.id !== issue.id && !relatedSet.has(i.id)
-    );
+    return allIssues.filter((i) => i.id !== issue.id && !relatedSet.has(i.id));
   }, [allIssues, issue.id, issue.relatedTo]);
 
   const parentIssue = issue.parent ? issueMap.get(issue.parent) : undefined;
@@ -228,7 +204,7 @@ export function IssueDetail({
     }
     setSavingTitle(true);
     try {
-      await updateIssue(issue.id, { title: titleValue.trim() });
+      await updateIssue(issue.id, {title: titleValue.trim()});
       setEditingTitle(false);
       toast.success('Title updated');
       onRefresh?.();
@@ -248,7 +224,7 @@ export function IssueDetail({
     }
     setSavingDescription(true);
     try {
-      await updateIssue(issue.id, { description: descriptionValue.trim() || undefined });
+      await updateIssue(issue.id, {description: descriptionValue.trim() || undefined});
       setEditingDescription(false);
       toast.success('Description updated');
       onRefresh?.();
@@ -265,9 +241,9 @@ export function IssueDetail({
     if (newStatus === issue.status) return;
     setSavingStatus(true);
     try {
-      const result = await updateIssue(issue.id, { status: newStatus });
+      const result = await updateIssue(issue.id, {status: newStatus});
       // Check for cascade claim response
-      const cascaded = (result as { _cascadeClaimed?: string[] })._cascadeClaimed;
+      const cascaded = (result as {_cascadeClaimed?: string[]})._cascadeClaimed;
       if (cascaded && cascaded.length > 0) {
         toast.success('Status updated', {
           description: `Also started: ${cascaded.join(', ')}`,
@@ -289,7 +265,7 @@ export function IssueDetail({
     if (newPriority === issue.priority) return;
     setSavingPriority(true);
     try {
-      await updateIssue(issue.id, { priority: newPriority });
+      await updateIssue(issue.id, {priority: newPriority});
       toast.success('Priority updated');
       onRefresh?.();
     } catch (err) {
@@ -431,12 +407,7 @@ export function IssueDetail({
 
     setSavingRelated(true);
     try {
-      await addRelated(
-        issue.id,
-        selectedRelated,
-        issue.relatedTo || [],
-        relatedIssue.relatedTo || []
-      );
+      await addRelated(issue.id, selectedRelated, issue.relatedTo || [], relatedIssue.relatedTo || []);
       setRelatedDialogOpen(false);
       setSelectedRelated('');
       toast.success('Related issue added');
@@ -460,16 +431,11 @@ export function IssueDetail({
     const currentRelatedTo = [...(issue.relatedTo || [])];
     const relatedIssueRelatedTo = [...(relatedIssue.relatedTo || [])];
     // After removal, these will be the new arrays
-    const newOurRelatedTo = currentRelatedTo.filter(id => id !== relatedId);
-    const newTheirRelatedTo = relatedIssueRelatedTo.filter(id => id !== issue.id);
+    const newOurRelatedTo = currentRelatedTo.filter((id) => id !== relatedId);
+    const newTheirRelatedTo = relatedIssueRelatedTo.filter((id) => id !== issue.id);
 
     try {
-      await removeRelated(
-        issue.id,
-        relatedId,
-        currentRelatedTo,
-        relatedIssueRelatedTo
-      );
+      await removeRelated(issue.id, relatedId, currentRelatedTo, relatedIssueRelatedTo);
       toast('Related issue removed', {
         duration: 5000,
         action: {
@@ -532,17 +498,8 @@ export function IssueDetail({
                   }
                 }}
               />
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleSaveTitle}
-                disabled={savingTitle}
-              >
-                {savingTitle ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
+              <Button size="icon" variant="ghost" onClick={handleSaveTitle} disabled={savingTitle}>
+                {savingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               </Button>
               <Button
                 size="icon"
@@ -559,21 +516,16 @@ export function IssueDetail({
             <>
               <h2
                 className={cn(
-                  "text-lg font-semibold flex-1 rounded px-1 -mx-1",
-                  !issue.deleted && "cursor-pointer hover:bg-muted"
+                  'text-lg font-semibold flex-1 rounded px-1 -mx-1',
+                  !issue.deleted && 'cursor-pointer hover:bg-muted'
                 )}
                 onClick={!issue.deleted ? () => setEditingTitle(true) : undefined}
-                title={!issue.deleted ? "Click to edit" : undefined}
+                title={!issue.deleted ? 'Click to edit' : undefined}
               >
                 {issue.title}
               </h2>
               {!issue.deleted && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditingTitle(true)}
-                  title="Edit title"
-                >
+                <Button variant="ghost" size="icon" onClick={() => setEditingTitle(true)} title="Edit title">
                   <Pencil className="h-4 w-4" />
                 </Button>
               )}
@@ -615,19 +567,18 @@ export function IssueDetail({
               disabled={savingStatus || issue.status === 'closed' || issue.deleted}
             >
               {STATUSES.filter((s) => s !== 'closed').map((s) => {
-                const blockedTitle = s === 'in_progress' && cannotClaim
-                  ? (blockedAncestor
-                    ? `Cannot start - parent ${blockedAncestor.ancestor.id} is blocked by ${blockedAncestor.blockers.map(b => b.id).join(', ')}`
-                    : 'Cannot start - has open blockers')
-                  : undefined;
+                const blockedTitle =
+                  s === 'in_progress' && cannotClaim
+                    ? blockedAncestor
+                      ? `Cannot start - parent ${blockedAncestor.ancestor.id} is blocked by ${blockedAncestor.blockers
+                          .map((b) => b.id)
+                          .join(', ')}`
+                      : 'Cannot start - has open blockers'
+                    : undefined;
                 return (
-                  <option
-                    key={s}
-                    value={s}
-                    disabled={s === 'in_progress' && cannotClaim}
-                    title={blockedTitle}
-                  >
-                    {STATUS_LABELS[s]}{s === 'in_progress' && cannotClaim ? ' (blocked)' : ''}
+                  <option key={s} value={s} disabled={s === 'in_progress' && cannotClaim} title={blockedTitle}>
+                    {STATUS_LABELS[s]}
+                    {s === 'in_progress' && cannotClaim ? ' (blocked)' : ''}
                   </option>
                 );
               })}
@@ -651,17 +602,28 @@ export function IssueDetail({
 
         {/* Type badge (read-only) */}
         <div className="flex items-center gap-2">
-          <Badge className={
-            issue.type === 'epic' ? 'bg-indigo-500 text-white' :
-            issue.type === 'bug' ? 'bg-rose-500 text-white' :
-            'bg-slate-500 text-white'
-          }>{issue.type}</Badge>
-          <Badge className={
-            issue.status === 'open' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' :
-            issue.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' :
-            issue.status === 'blocked' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200' :
-            'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' // closed
-          }>
+          <Badge
+            className={
+              issue.type === 'epic'
+                ? 'bg-indigo-500 text-white'
+                : issue.type === 'bug'
+                ? 'bg-rose-500 text-white'
+                : 'bg-slate-500 text-white'
+            }
+          >
+            {issue.type}
+          </Badge>
+          <Badge
+            className={
+              issue.status === 'open'
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200'
+                : issue.status === 'in_progress'
+                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200'
+                : issue.status === 'blocked'
+                ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'
+                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' // closed
+            }
+          >
             {issue.status.replace('_', ' ')}
           </Badge>
         </div>
@@ -670,11 +632,7 @@ export function IssueDetail({
         {!issue.deleted && (
           <div className="flex gap-2">
             {issue.status === 'closed' ? (
-              <Button
-                variant="outline"
-                onClick={handleReopenIssue}
-                disabled={closingIssue}
-              >
+              <Button variant="outline" onClick={handleReopenIssue} disabled={closingIssue}>
                 {closingIssue ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
@@ -683,11 +641,7 @@ export function IssueDetail({
                 Reopen Issue
               </Button>
             ) : (
-              <Button
-                variant="destructive"
-                onClick={() => setCloseConfirmOpen(true)}
-                disabled={closingIssue}
-              >
+              <Button variant="destructive" onClick={() => setCloseConfirmOpen(true)} disabled={closingIssue}>
                 {closingIssue ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
@@ -704,11 +658,7 @@ export function IssueDetail({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">Description</h3>
             {!editingDescription && !issue.deleted && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditingDescription(true)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setEditingDescription(true)}>
                 <Pencil className="h-3 w-3 mr-1" />
                 Edit
               </Button>
@@ -723,11 +673,7 @@ export function IssueDetail({
                 placeholder="Enter description..."
               />
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleSaveDescription}
-                  disabled={savingDescription}
-                >
+                <Button size="sm" onClick={handleSaveDescription} disabled={savingDescription}>
                   {savingDescription ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   ) : (
@@ -808,7 +754,7 @@ export function IssueDetail({
                       className={`h-2 rounded-full transition-all ${
                         percent === 100 ? 'bg-green-500' : 'bg-purple-500'
                       }`}
-                      style={{ width: `${percent}%` }}
+                      style={{width: `${percent}%`}}
                     />
                   </div>
                 </>
@@ -824,10 +770,7 @@ export function IssueDetail({
                   <span className="font-mono text-xs">{child.id}</span>
                   <span className="mx-2">—</span>
                   <span>{child.title}</span>
-                  <Badge
-                    variant={STATUS_BADGE_VARIANTS[child.status]}
-                    className="ml-2 text-xs"
-                  >
+                  <Badge variant={STATUS_BADGE_VARIANTS[child.status]} className="ml-2 text-xs">
                     {child.status.replace('_', ' ')}
                   </Badge>
                 </button>
@@ -842,11 +785,7 @@ export function IssueDetail({
             className="flex items-center gap-2 text-sm font-medium w-full"
             onClick={() => setActivityExpanded(!activityExpanded)}
           >
-            {activityExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
+            {activityExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <Activity className="h-4 w-4" />
             {issue.type === 'epic' && childIds.length > 0 ? 'Children Activity' : 'Activity'}
           </button>
@@ -867,15 +806,9 @@ export function IssueDetail({
         {/* Dependencies */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-destructive">
-              Blocked By ({blockedByIssues.length})
-            </h3>
+            <h3 className="text-sm font-medium text-destructive">Blocked By ({blockedByIssues.length})</h3>
             {availableBlockers.length > 0 && issue.status !== 'closed' && !issue.deleted && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setBlockerDialogOpen(true)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setBlockerDialogOpen(true)}>
                 <Plus className="h-3 w-3 mr-1" />
                 Add Blocker
               </Button>
@@ -884,21 +817,12 @@ export function IssueDetail({
           {blockedByIssues.length > 0 ? (
             <div className="space-y-1">
               {blockedByIssues.map((blocker) => (
-                <div
-                  key={blocker.id}
-                  className="flex items-center justify-between hover:bg-muted rounded p-2"
-                >
-                  <button
-                    className="flex-1 text-left text-sm"
-                    onClick={() => onSelectIssue(blocker)}
-                  >
+                <div key={blocker.id} className="flex items-center justify-between hover:bg-muted rounded p-2">
+                  <button className="flex-1 text-left text-sm" onClick={() => onSelectIssue(blocker)}>
                     <span className="font-mono text-xs">{blocker.id}</span>
                     <span className="mx-2">—</span>
                     <span>{blocker.title}</span>
-                    <Badge
-                      variant={STATUS_BADGE_VARIANTS[blocker.status]}
-                      className="ml-2 text-xs"
-                    >
+                    <Badge variant={STATUS_BADGE_VARIANTS[blocker.status]} className="ml-2 text-xs">
                       {blocker.status.replace('_', ' ')}
                     </Badge>
                   </button>
@@ -925,9 +849,7 @@ export function IssueDetail({
 
         {blockingIssues.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-medium text-primary">
-              Blocking ({blockingIssues.length})
-            </h3>
+            <h3 className="text-sm font-medium text-primary">Blocking ({blockingIssues.length})</h3>
             <div className="space-y-1">
               {blockingIssues.map((blocked) => (
                 <button
@@ -938,10 +860,7 @@ export function IssueDetail({
                   <span className="font-mono text-xs">{blocked.id}</span>
                   <span className="mx-2">—</span>
                   <span>{blocked.title}</span>
-                  <Badge
-                    variant={STATUS_BADGE_VARIANTS[blocked.status]}
-                    className="ml-2 text-xs"
-                  >
+                  <Badge variant={STATUS_BADGE_VARIANTS[blocked.status]} className="ml-2 text-xs">
                     {blocked.status.replace('_', ' ')}
                   </Badge>
                 </button>
@@ -958,11 +877,7 @@ export function IssueDetail({
               Related ({relatedIssues.length})
             </h3>
             {issue.status !== 'closed' && !issue.deleted && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRelatedDialogOpen(true)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setRelatedDialogOpen(true)}>
                 <Plus className="h-3 w-3 mr-1" />
                 Add Related
               </Button>
@@ -971,21 +886,12 @@ export function IssueDetail({
           {relatedIssues.length > 0 ? (
             <div className="space-y-1">
               {relatedIssues.map((related) => (
-                <div
-                  key={related.id}
-                  className="flex items-center justify-between hover:bg-muted rounded p-2"
-                >
-                  <button
-                    className="flex-1 text-left text-sm"
-                    onClick={() => onSelectIssue(related)}
-                  >
+                <div key={related.id} className="flex items-center justify-between hover:bg-muted rounded p-2">
+                  <button className="flex-1 text-left text-sm" onClick={() => onSelectIssue(related)}>
                     <span className="font-mono text-xs">{related.id}</span>
                     <span className="mx-2">—</span>
                     <span>{related.title}</span>
-                    <Badge
-                      variant={STATUS_BADGE_VARIANTS[related.status]}
-                      className="ml-2 text-xs"
-                    >
+                    <Badge variant={STATUS_BADGE_VARIANTS[related.status]} className="ml-2 text-xs">
                       {related.status.replace('_', ' ')}
                     </Badge>
                   </button>
@@ -1021,20 +927,17 @@ export function IssueDetail({
               {[...issue.comments]
                 .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                 .map((comment, index) => (
-                <div
-                  key={`${comment.timestamp}-${index}`}
-                  className="bg-muted rounded-lg p-3 text-sm space-y-1"
-                >
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span title={new Date(comment.timestamp).toLocaleString()}>
-                      {formatRelativeTime(comment.timestamp)}
-                    </span>
-                    {comment.author && <span>by {comment.author}</span>}
+                  <div key={`${comment.timestamp}-${index}`} className="bg-muted rounded-lg p-3 text-sm space-y-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span title={new Date(comment.timestamp).toLocaleString()}>
+                        {formatRelativeTime(comment.timestamp)}
+                      </span>
+                      {comment.author && <span>by {comment.author}</span>}
+                    </div>
+                    <p className="whitespace-pre-wrap">{comment.text}</p>
                   </div>
-                  <p className="whitespace-pre-wrap">{comment.text}</p>
-                </div>
-              ))}
+                ))}
             </div>
           )}
 
@@ -1054,11 +957,7 @@ export function IssueDetail({
                 disabled={savingComment || !newComment.trim()}
                 title="Add Comment (c)"
               >
-                {savingComment ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4 mr-1" />
-                )}
+                {savingComment ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
                 Add Comment
               </Button>
             </div>
@@ -1069,15 +968,11 @@ export function IssueDetail({
         <div className="space-y-2 text-xs text-muted-foreground border-t pt-4">
           <div className="flex items-center gap-2">
             <span>Created:</span>
-            <span title={new Date(issue.createdAt).toLocaleString()}>
-              {formatRelativeTime(issue.createdAt)}
-            </span>
+            <span title={new Date(issue.createdAt).toLocaleString()}>{formatRelativeTime(issue.createdAt)}</span>
           </div>
           <div className="flex items-center gap-2">
             <span>Updated:</span>
-            <span title={new Date(issue.updatedAt).toLocaleString()}>
-              {formatRelativeTime(issue.updatedAt)}
-            </span>
+            <span title={new Date(issue.updatedAt).toLocaleString()}>{formatRelativeTime(issue.updatedAt)}</span>
           </div>
         </div>
       </div>
@@ -1110,15 +1005,8 @@ export function IssueDetail({
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleAddBlocker}
-              disabled={!selectedBlocker || savingBlocker}
-            >
-              {savingBlocker ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4 mr-1" />
-              )}
+            <Button onClick={handleAddBlocker} disabled={!selectedBlocker || savingBlocker}>
+              {savingBlocker ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
               Add Blocker
             </Button>
           </DialogFooter>
@@ -1135,12 +1023,8 @@ export function IssueDetail({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCloseConfirmOpen(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleCloseIssue}>
-              Close Issue
-            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => setCloseConfirmOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCloseIssue}>Close Issue</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1150,15 +1034,15 @@ export function IssueDetail({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Blocker</AlertDialogTitle>
-            <AlertDialogDescription>
-              Remove {blockerToRemove} as a blocker for this issue?
-            </AlertDialogDescription>
+            <AlertDialogDescription>Remove {blockerToRemove} as a blocker for this issue?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setRemoveBlockerConfirmOpen(false);
-              setBlockerToRemove(null);
-            }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setRemoveBlockerConfirmOpen(false);
+                setBlockerToRemove(null);
+              }}
+            >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction onClick={() => blockerToRemove && handleRemoveBlocker(blockerToRemove)}>
@@ -1196,15 +1080,8 @@ export function IssueDetail({
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleAddRelated}
-              disabled={!selectedRelated || savingRelated}
-            >
-              {savingRelated ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4 mr-1" />
-              )}
+            <Button onClick={handleAddRelated} disabled={!selectedRelated || savingRelated}>
+              {savingRelated ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
               Add Related
             </Button>
           </DialogFooter>
@@ -1216,15 +1093,15 @@ export function IssueDetail({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Related Issue</AlertDialogTitle>
-            <AlertDialogDescription>
-              Remove {relatedToRemove} as a related issue?
-            </AlertDialogDescription>
+            <AlertDialogDescription>Remove {relatedToRemove} as a related issue?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setRemoveRelatedConfirmOpen(false);
-              setRelatedToRemove(null);
-            }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setRemoveRelatedConfirmOpen(false);
+                setRelatedToRemove(null);
+              }}
+            >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction onClick={() => relatedToRemove && handleRemoveRelated(relatedToRemove)}>

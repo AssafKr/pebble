@@ -1,11 +1,11 @@
-import type { Issue, IssueEvent, IssueType, Priority, Status } from '../../shared/types';
+import type {Issue, IssueEvent, IssueType, Priority, Status} from '../../shared/types';
 
 const API_BASE = '/api';
 
 // Helper for handling API responses
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: response.statusText }));
+    const error = await response.json().catch(() => ({error: response.statusText}));
     throw new Error(error.error || `Request failed: ${response.statusText}`);
   }
   return response.json();
@@ -26,8 +26,8 @@ export async function fetchSources(): Promise<SourcesResponse> {
 export async function addSource(filePath: string): Promise<SourcesResponse> {
   const response = await fetch(`${API_BASE}/sources`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: filePath }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: filePath}),
   });
   return handleResponse<SourcesResponse>(response);
 }
@@ -49,9 +49,9 @@ export interface Worktree {
   issueCount: number;
 }
 
-export async function fetchWorktrees(): Promise<{ worktrees: Worktree[] }> {
+export async function fetchWorktrees(): Promise<{worktrees: Worktree[]}> {
   const response = await fetch(`${API_BASE}/worktrees`);
-  return handleResponse<{ worktrees: Worktree[] }>(response);
+  return handleResponse<{worktrees: Worktree[]}>(response);
 }
 
 export async function fetchIssues(): Promise<Issue[]> {
@@ -85,12 +85,10 @@ export interface UpdateIssueInput {
 
 // Mutation endpoints
 export async function createIssue(data: CreateIssueInput, targetSourceIndex?: number): Promise<Issue> {
-  const url = targetSourceIndex !== undefined
-    ? `${API_BASE}/issues?target=${targetSourceIndex}`
-    : `${API_BASE}/issues`;
+  const url = targetSourceIndex !== undefined ? `${API_BASE}/issues?target=${targetSourceIndex}` : `${API_BASE}/issues`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(data),
   });
   return handleResponse<Issue>(response);
@@ -99,7 +97,7 @@ export async function createIssue(data: CreateIssueInput, targetSourceIndex?: nu
 export async function updateIssue(id: string, data: UpdateIssueInput): Promise<Issue> {
   const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(data),
   });
   return handleResponse<Issue>(response);
@@ -108,8 +106,8 @@ export async function updateIssue(id: string, data: UpdateIssueInput): Promise<I
 export async function closeIssue(id: string, reason?: string): Promise<Issue> {
   const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}/close`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reason }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({reason}),
   });
   return handleResponse<Issue>(response);
 }
@@ -117,8 +115,8 @@ export async function closeIssue(id: string, reason?: string): Promise<Issue> {
 export async function reopenIssue(id: string, reason?: string): Promise<Issue> {
   const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}/reopen`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reason }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({reason}),
   });
   return handleResponse<Issue>(response);
 }
@@ -126,8 +124,8 @@ export async function reopenIssue(id: string, reason?: string): Promise<Issue> {
 export async function addComment(id: string, text: string, author?: string): Promise<Issue> {
   const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}/comments`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, author }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({text, author}),
   });
   return handleResponse<Issue>(response);
 }
@@ -135,17 +133,16 @@ export async function addComment(id: string, text: string, author?: string): Pro
 export async function addDependency(id: string, blockerId: string): Promise<Issue> {
   const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}/deps`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ blockerId }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({blockerId}),
   });
   return handleResponse<Issue>(response);
 }
 
 export async function removeDependency(id: string, blockerId: string): Promise<Issue> {
-  const response = await fetch(
-    `${API_BASE}/issues/${encodeURIComponent(id)}/deps/${encodeURIComponent(blockerId)}`,
-    { method: 'DELETE' }
-  );
+  const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}/deps/${encodeURIComponent(blockerId)}`, {
+    method: 'DELETE',
+  });
   return handleResponse<Issue>(response);
 }
 
@@ -158,11 +155,11 @@ export async function addRelated(
 ): Promise<void> {
   // Add relatedId to issueId's relatedTo
   const newRelatedTo1 = [...currentRelatedTo, relatedId];
-  await updateIssue(issueId, { relatedTo: newRelatedTo1 });
+  await updateIssue(issueId, {relatedTo: newRelatedTo1});
 
   // Add issueId to relatedId's relatedTo (bidirectional)
   const newRelatedTo2 = [...relatedIssueRelatedTo, issueId];
-  await updateIssue(relatedId, { relatedTo: newRelatedTo2 });
+  await updateIssue(relatedId, {relatedTo: newRelatedTo2});
 }
 
 export async function removeRelated(
@@ -172,51 +169,51 @@ export async function removeRelated(
   relatedIssueRelatedTo: string[]
 ): Promise<void> {
   // Remove relatedId from issueId's relatedTo
-  const newRelatedTo1 = currentRelatedTo.filter(id => id !== relatedId);
-  await updateIssue(issueId, { relatedTo: newRelatedTo1 });
+  const newRelatedTo1 = currentRelatedTo.filter((id) => id !== relatedId);
+  await updateIssue(issueId, {relatedTo: newRelatedTo1});
 
   // Remove issueId from relatedId's relatedTo (bidirectional)
-  const newRelatedTo2 = relatedIssueRelatedTo.filter(id => id !== issueId);
-  await updateIssue(relatedId, { relatedTo: newRelatedTo2 });
+  const newRelatedTo2 = relatedIssueRelatedTo.filter((id) => id !== issueId);
+  await updateIssue(relatedId, {relatedTo: newRelatedTo2});
 }
 
 // Bulk operation types
 export interface BulkResult {
-  results: Array<{ id: string; success: boolean; error?: string }>;
+  results: Array<{id: string; success: boolean; error?: string}>;
 }
 
 // Bulk operations
 export async function bulkCloseIssues(ids: string[]): Promise<BulkResult> {
   const response = await fetch(`${API_BASE}/issues/bulk/close`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ids}),
   });
   return handleResponse<BulkResult>(response);
 }
 
 export async function bulkUpdateIssues(
   ids: string[],
-  updates: { status?: Status; priority?: Priority }
+  updates: {status?: Status; priority?: Priority}
 ): Promise<BulkResult> {
   const response = await fetch(`${API_BASE}/issues/bulk/update`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids, updates }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ids, updates}),
   });
   return handleResponse<BulkResult>(response);
 }
 
 // Delete and restore operations
 export interface DeleteResult {
-  deleted: Array<{ id: string; cascade: boolean }>;
+  deleted: Array<{id: string; cascade: boolean}>;
 }
 
 export async function deleteIssue(id: string, reason?: string): Promise<DeleteResult> {
   const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}/delete`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reason }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({reason}),
   });
   return handleResponse<DeleteResult>(response);
 }
@@ -224,8 +221,8 @@ export async function deleteIssue(id: string, reason?: string): Promise<DeleteRe
 export async function restoreIssue(id: string, reason?: string): Promise<Issue> {
   const response = await fetch(`${API_BASE}/issues/${encodeURIComponent(id)}/restore`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reason }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({reason}),
   });
   return handleResponse<Issue>(response);
 }

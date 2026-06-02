@@ -1,24 +1,17 @@
-import { useCallback } from 'react';
-import { useQuery, useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  fetchIssuesData,
-  issuesDataQueryKey,
-  type IssuesData,
-} from '../lib/issuesQueries';
+import {useCallback} from 'react';
+import {useQuery, useSuspenseQuery, useQueryClient} from '@tanstack/react-query';
+import {fetchIssuesData, issuesDataQueryKey, type IssuesData} from '../lib/issuesQueries';
 
-export type { IssuesData };
+export type {IssuesData};
 
 export function useInvalidateIssuesData(): () => Promise<void> {
   const queryClient = useQueryClient();
-  return useCallback(
-    () => queryClient.invalidateQueries({ queryKey: issuesDataQueryKey }),
-    [queryClient],
-  );
+  return useCallback(() => queryClient.invalidateQueries({queryKey: issuesDataQueryKey}), [queryClient]);
 }
 
-export function useSuspenseIssues(): IssuesData & { refresh: () => Promise<void> } {
+export function useSuspenseIssues(): IssuesData & {refresh: () => Promise<void>} {
   const invalidate = useInvalidateIssuesData();
-  const { data } = useSuspenseQuery({
+  const {data} = useSuspenseQuery({
     queryKey: issuesDataQueryKey,
     queryFn: fetchIssuesData,
   });
@@ -36,7 +29,7 @@ export function useIssues(): IssuesData & {
   refresh: () => Promise<void>;
 } {
   const invalidate = useInvalidateIssuesData();
-  const { data, isLoading, error, isFetching } = useQuery({
+  const {data, isLoading, error, isFetching} = useQuery({
     queryKey: issuesDataQueryKey,
     queryFn: fetchIssuesData,
   });

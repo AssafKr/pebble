@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { cn } from '../../lib/utils';
+import {cn} from '../../lib/utils';
 
 interface AlertDialogProps {
   open: boolean;
@@ -7,7 +7,7 @@ interface AlertDialogProps {
   children: React.ReactNode;
 }
 
-export function AlertDialog({ open, onOpenChange, children }: AlertDialogProps) {
+export function AlertDialog({open, onOpenChange, children}: AlertDialogProps) {
   // Close on Escape key
   React.useEffect(() => {
     if (!open) return;
@@ -27,9 +27,7 @@ export function AlertDialog({ open, onOpenChange, children }: AlertDialogProps) 
       {/* Backdrop - NO onClick handler, requires explicit action */}
       <div className="fixed inset-0 bg-black/50" />
       {/* Content */}
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        {children}
-      </div>
+      <div className="fixed inset-0 flex items-center justify-center p-4">{children}</div>
     </div>
   );
 }
@@ -39,13 +37,10 @@ interface AlertDialogContentProps {
   className?: string;
 }
 
-export function AlertDialogContent({ children, className }: AlertDialogContentProps) {
+export function AlertDialogContent({children, className}: AlertDialogContentProps) {
   return (
     <div
-      className={cn(
-        'relative bg-background rounded-lg shadow-lg border w-full max-w-md',
-        className
-      )}
+      className={cn('relative bg-background rounded-lg shadow-lg border w-full max-w-md', className)}
       onClick={(e) => e.stopPropagation()}
     >
       {children}
@@ -58,12 +53,8 @@ interface AlertDialogHeaderProps {
   className?: string;
 }
 
-export function AlertDialogHeader({ children, className }: AlertDialogHeaderProps) {
-  return (
-    <div className={cn('flex flex-col space-y-2 p-6 pb-0', className)}>
-      {children}
-    </div>
-  );
+export function AlertDialogHeader({children, className}: AlertDialogHeaderProps) {
+  return <div className={cn('flex flex-col space-y-2 p-6 pb-0', className)}>{children}</div>;
 }
 
 interface AlertDialogTitleProps {
@@ -71,12 +62,8 @@ interface AlertDialogTitleProps {
   className?: string;
 }
 
-export function AlertDialogTitle({ children, className }: AlertDialogTitleProps) {
-  return (
-    <h2 className={cn('text-lg font-semibold', className)}>
-      {children}
-    </h2>
-  );
+export function AlertDialogTitle({children, className}: AlertDialogTitleProps) {
+  return <h2 className={cn('text-lg font-semibold', className)}>{children}</h2>;
 }
 
 interface AlertDialogDescriptionProps {
@@ -84,12 +71,8 @@ interface AlertDialogDescriptionProps {
   className?: string;
 }
 
-export function AlertDialogDescription({ children, className }: AlertDialogDescriptionProps) {
-  return (
-    <p className={cn('text-sm text-muted-foreground', className)}>
-      {children}
-    </p>
-  );
+export function AlertDialogDescription({children, className}: AlertDialogDescriptionProps) {
+  return <p className={cn('text-sm text-muted-foreground', className)}>{children}</p>;
 }
 
 interface AlertDialogFooterProps {
@@ -97,7 +80,7 @@ interface AlertDialogFooterProps {
   className?: string;
 }
 
-export function AlertDialogFooter({ children, className }: AlertDialogFooterProps) {
+export function AlertDialogFooter({children, className}: AlertDialogFooterProps) {
   return (
     <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 pt-4', className)}>
       {children}
@@ -110,7 +93,7 @@ interface AlertDialogActionProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   className?: string;
 }
 
-export function AlertDialogAction({ children, className, ...props }: AlertDialogActionProps) {
+export function AlertDialogAction({children, className, ...props}: AlertDialogActionProps) {
   return (
     <button
       className={cn(
@@ -133,7 +116,7 @@ interface AlertDialogCancelProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   className?: string;
 }
 
-export function AlertDialogCancel({ children, className, ...props }: AlertDialogCancelProps) {
+export function AlertDialogCancel({children, className, ...props}: AlertDialogCancelProps) {
   return (
     <button
       className={cn(

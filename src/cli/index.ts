@@ -1,30 +1,30 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { createCommand } from './commands/create.js';
-import { updateCommand } from './commands/update.js';
-import { closeCommand } from './commands/close.js';
-import { reopenCommand } from './commands/reopen.js';
-import { deleteCommand } from './commands/delete.js';
-import { restoreCommand } from './commands/restore.js';
-import { claimCommand } from './commands/claim.js';
-import { listCommand } from './commands/list.js';
-import { showCommand } from './commands/show.js';
-import { readyCommand } from './commands/ready.js';
-import { blockedCommand } from './commands/blocked.js';
-import { depCommand } from './commands/dep.js';
-import { commentsCommand } from './commands/comments.js';
-import { graphCommand } from './commands/graph.js';
-import { uiCommand } from './commands/ui.js';
-import { importCommand } from './commands/import.js';
-import { mergeCommand } from './commands/merge.js';
-import { summaryCommand } from './commands/summary.js';
-import { historyCommand } from './commands/history.js';
-import { searchCommand } from './commands/search.js';
-import { initCommand } from './commands/init.js';
+import {Command} from 'commander';
+import {readFileSync} from 'fs';
+import {fileURLToPath} from 'url';
+import {dirname, join} from 'path';
+import {createCommand} from './commands/create.js';
+import {updateCommand} from './commands/update.js';
+import {closeCommand} from './commands/close.js';
+import {reopenCommand} from './commands/reopen.js';
+import {deleteCommand} from './commands/delete.js';
+import {restoreCommand} from './commands/restore.js';
+import {claimCommand} from './commands/claim.js';
+import {listCommand} from './commands/list.js';
+import {showCommand} from './commands/show.js';
+import {readyCommand} from './commands/ready.js';
+import {blockedCommand} from './commands/blocked.js';
+import {depCommand} from './commands/dep.js';
+import {commentsCommand} from './commands/comments.js';
+import {graphCommand} from './commands/graph.js';
+import {uiCommand} from './commands/ui.js';
+import {importCommand} from './commands/import.js';
+import {mergeCommand} from './commands/merge.js';
+import {summaryCommand} from './commands/summary.js';
+import {historyCommand} from './commands/history.js';
+import {searchCommand} from './commands/search.js';
+import {initCommand} from './commands/init.js';
 
 // Read version from package.json
 const __filename = fileURLToPath(import.meta.url);

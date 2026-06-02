@@ -1,21 +1,11 @@
-import { Command } from 'commander';
-import type { Issue, UpdateEvent } from '../../shared/types.js';
-import { getOrCreatePebbleDir, appendEvent, readEvents } from '../lib/storage.js';
-import {
-  getIssue,
-  resolveId,
-  detectCycle,
-  getBlockers,
-  getBlocking,
-  getRelated,
-  computeState,
-} from '../lib/state.js';
-import { outputMutationSuccess, outputError, formatDepsPretty, formatJson } from '../lib/output.js';
+import {Command} from 'commander';
+import type {Issue, UpdateEvent} from '../../shared/types.js';
+import {getOrCreatePebbleDir, appendEvent, readEvents} from '../lib/storage.js';
+import {getIssue, resolveId, detectCycle, getBlockers, getBlocking, getRelated, computeState} from '../lib/state.js';
+import {outputMutationSuccess, outputError, formatDepsPretty, formatJson} from '../lib/output.js';
 
 export function depCommand(program: Command): void {
-  const dep = program
-    .command('dep')
-    .description('Manage dependencies');
+  const dep = program.command('dep').description('Manage dependencies');
 
   // dep add <id> [blocker-id] --needs <id> --blocks <id>
   dep
@@ -23,15 +13,18 @@ export function depCommand(program: Command): void {
     .description('Add a blocking dependency: <id> is blocked by [blockerId]')
     .option('--needs <id>', 'Issue that must be completed first (first arg needs this)')
     .option('--blocks <id>', 'Issue that this blocks (first arg blocks this)')
-    .addHelpText('after', `
+    .addHelpText(
+      'after',
+      `
 Examples:
   pb dep add B A            B is blocked by A (A must close before B is ready)
   pb dep add B --needs A    Same as above, self-documenting
   pb dep add A --blocks B   Same effect: B is blocked by A
 
 Think: "B needs A" → pb dep add B A
-`)
-    .action(async (id: string, blockerId: string | undefined, options: { needs?: string; blocks?: string }) => {
+`
+    )
+    .action(async (id: string, blockerId: string | undefined, options: {needs?: string; blocks?: string}) => {
       const pretty = program.opts().pretty ?? false;
 
       try {
@@ -209,7 +202,7 @@ Think: "B needs A" → pb dep add B A
         if (pretty) {
           console.log(`✓ ${resolvedId1} ↔ ${resolvedId2}`);
         } else {
-          console.log(formatJson({ id1: resolvedId1, id2: resolvedId2, related: true }));
+          console.log(formatJson({id1: resolvedId1, id2: resolvedId2, related: true}));
         }
       } catch (error) {
         outputError(error as Error, pretty);
@@ -270,7 +263,7 @@ Think: "B needs A" → pb dep add B A
         if (pretty) {
           console.log(`✓ ${resolvedId1} ↮ ${resolvedId2}`);
         } else {
-          console.log(formatJson({ id1: resolvedId1, id2: resolvedId2, related: false }));
+          console.log(formatJson({id1: resolvedId1, id2: resolvedId2, related: false}));
         }
       } catch (error) {
         outputError(error as Error, pretty);
@@ -299,12 +292,14 @@ Think: "B needs A" → pb dep add B A
         if (pretty) {
           console.log(formatDepsPretty(resolvedId, blockedBy, blocking, related));
         } else {
-          console.log(formatJson({
-            issueId: resolvedId,
-            blockedBy: blockedBy.map((i) => ({ id: i.id, title: i.title, status: i.status })),
-            blocking: blocking.map((i) => ({ id: i.id, title: i.title, status: i.status })),
-            related: related.map((i) => ({ id: i.id, title: i.title, status: i.status })),
-          }));
+          console.log(
+            formatJson({
+              issueId: resolvedId,
+              blockedBy: blockedBy.map((i) => ({id: i.id, title: i.title, status: i.status})),
+              blocking: blocking.map((i) => ({id: i.id, title: i.title, status: i.status})),
+              related: related.map((i) => ({id: i.id, title: i.title, status: i.status})),
+            })
+          );
         }
       } catch (error) {
         outputError(error as Error, pretty);
@@ -353,10 +348,7 @@ interface IssueTreeNode {
   children?: IssueTreeNode[];
 }
 
-function buildIssueTree(
-  issueId: string,
-  state: Map<string, Issue>
-): IssueTreeNode | null {
+function buildIssueTree(issueId: string, state: Map<string, Issue>): IssueTreeNode | null {
   const issue = state.get(issueId);
   if (!issue) {
     return null;
@@ -377,7 +369,7 @@ function buildIssueTree(
           status: i.status,
           isTarget: i.id === issueId,
           childrenCount: nodeChildren.length,
-          ...(nodeChildren.length > 0 && { children: nodeChildren }),
+          ...(nodeChildren.length > 0 && {children: nodeChildren}),
         });
       }
     }
@@ -395,7 +387,7 @@ function buildIssueTree(
     status: issue.status,
     isTarget: true,
     childrenCount: targetChildren.length,
-    ...(targetChildren.length > 0 && { children: targetChildren }),
+    ...(targetChildren.length > 0 && {children: targetChildren}),
   };
 
   // Walk up the parent chain to find the root

@@ -343,9 +343,9 @@ pb delete BEAD-epic
 ```json
 {
   "deleted": [
-    { "id": "BEAD-epic", "cascade": false },
-    { "id": "BEAD-child1", "cascade": true },
-    { "id": "BEAD-child2", "cascade": true }
+    {"id": "BEAD-epic", "cascade": false},
+    {"id": "BEAD-child1", "cascade": true},
+    {"id": "BEAD-child2", "cascade": true}
   ]
 }
 ```

@@ -1,23 +1,16 @@
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from './ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select } from './ui/select';
-import { Textarea } from './ui/textarea';
-import { HierarchicalSelect } from './ui/hierarchical-select';
-import { createIssue, fetchSources, type SourcesResponse } from '../lib/api';
-import type { Issue, IssueType, Priority } from '../../shared/types';
-import { ISSUE_TYPES, PRIORITIES, TYPE_LABELS, PRIORITY_DISPLAY_LABELS } from '../../shared/types';
-import { Loader2, FolderSync } from 'lucide-react';
+import {useState, useEffect} from 'react';
+import {toast} from 'sonner';
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from './ui/dialog';
+import {Button} from './ui/button';
+import {Input} from './ui/input';
+import {Label} from './ui/label';
+import {Select} from './ui/select';
+import {Textarea} from './ui/textarea';
+import {HierarchicalSelect} from './ui/hierarchical-select';
+import {createIssue, fetchSources, type SourcesResponse} from '../lib/api';
+import type {Issue, IssueType, Priority} from '../../shared/types';
+import {ISSUE_TYPES, PRIORITIES, TYPE_LABELS, PRIORITY_DISPLAY_LABELS} from '../../shared/types';
+import {Loader2, FolderSync} from 'lucide-react';
 
 interface CreateIssueFormProps {
   open: boolean;
@@ -26,7 +19,7 @@ interface CreateIssueFormProps {
   epics: Issue[];
 }
 
-export function CreateIssueForm({ open, onOpenChange, onCreated, epics }: CreateIssueFormProps) {
+export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIssueFormProps) {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<IssueType>('task');
   const [priority, setPriority] = useState<Priority>(2);
@@ -61,13 +54,16 @@ export function CreateIssueForm({ open, onOpenChange, onCreated, epics }: Create
     try {
       // Pass target source index in multi-worktree mode
       const targetIndex = sources?.isMultiWorktree ? targetSource : undefined;
-      await createIssue({
-        title: title.trim(),
-        type,
-        priority,
-        description: description.trim() || undefined,
-        parent: parent || undefined,
-      }, targetIndex);
+      await createIssue(
+        {
+          title: title.trim(),
+          type,
+          priority,
+          description: description.trim() || undefined,
+          parent: parent || undefined,
+        },
+        targetIndex
+      );
 
       // Reset form
       setTitle('');
@@ -96,7 +92,7 @@ export function CreateIssueForm({ open, onOpenChange, onCreated, epics }: Create
   };
 
   // Filter epics that are not closed
-  const availableEpics = epics.filter(e => e.status !== 'closed');
+  const availableEpics = epics.filter((e) => e.status !== 'closed');
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -104,9 +100,7 @@ export function CreateIssueForm({ open, onOpenChange, onCreated, epics }: Create
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create New Issue</DialogTitle>
-            <DialogDescription>
-              Add a new task, bug, or epic to your project.
-            </DialogDescription>
+            <DialogDescription>Add a new task, bug, or epic to your project.</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4 px-6">
@@ -204,27 +198,16 @@ export function CreateIssueForm({ open, onOpenChange, onCreated, epics }: Create
                     </option>
                   ))}
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Choose which worktree to create the issue in
-                </p>
+                <p className="text-xs text-muted-foreground">Choose which worktree to create the issue in</p>
               </div>
             )}
 
             {/* Error message */}
-            {error && (
-              <div className="text-sm text-destructive">
-                {error}
-              </div>
-            )}
+            {error && <div className="text-sm text-destructive">{error}</div>}
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={loading}
-            >
+            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>

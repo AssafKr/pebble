@@ -1,8 +1,8 @@
-import { Command } from 'commander';
-import type { ReopenEvent } from '../../shared/types.js';
-import { getOrCreatePebbleDir, appendEvent } from '../lib/storage.js';
-import { getIssue, resolveId } from '../lib/state.js';
-import { outputMutationSuccess, outputError } from '../lib/output.js';
+import {Command} from 'commander';
+import type {ReopenEvent} from '../../shared/types.js';
+import {getOrCreatePebbleDir, appendEvent} from '../lib/storage.js';
+import {getIssue, resolveId} from '../lib/state.js';
+import {outputMutationSuccess, outputError} from '../lib/output.js';
 
 export function reopenCommand(program: Command): void {
   program

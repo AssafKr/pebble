@@ -1,6 +1,6 @@
-import type { Issue } from '../../shared/types';
-import { ChevronRight, Home } from 'lucide-react';
-import type { AppView } from '../lib/routes';
+import type {Issue} from '../../shared/types';
+import {ChevronRight, Home} from 'lucide-react';
+import type {AppView} from '../lib/routes';
 
 interface BreadcrumbsProps {
   view: AppView;
@@ -24,7 +24,7 @@ export function Breadcrumbs({
   const issueMap = new Map(allIssues.map((issue) => [issue.id, issue]));
 
   // Build breadcrumb trail
-  const crumbs: { label: string; onClick?: () => void }[] = [];
+  const crumbs: {label: string; onClick?: () => void}[] = [];
 
   // First crumb is always the view
   const viewLabels: Record<AppView, string> = {
@@ -87,10 +87,7 @@ export function Breadcrumbs({
         <span key={index} className="flex items-center">
           {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
           {crumb.onClick ? (
-            <button
-              className="hover:text-foreground hover:underline"
-              onClick={crumb.onClick}
-            >
+            <button className="hover:text-foreground hover:underline" onClick={crumb.onClick}>
               {crumb.label}
             </button>
           ) : (

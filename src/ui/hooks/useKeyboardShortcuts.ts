@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import {useEffect, useCallback} from 'react';
 
 export interface KeyboardShortcutHandlers {
   /** Called when 'n' is pressed - open create dialog */
@@ -62,50 +62,53 @@ export function useKeyboardShortcuts({
   onOpenDetail,
   onFocusComment,
 }: KeyboardShortcutHandlers) {
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Don't fire shortcuts when typing in inputs
-    if (isInputFocused()) return;
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      // Don't fire shortcuts when typing in inputs
+      if (isInputFocused()) return;
 
-    // Don't interfere with modifier key combinations
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
+      // Don't interfere with modifier key combinations
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
 
-    switch (event.key.toLowerCase()) {
-      case 'n':
-        if (onNewIssue) {
-          event.preventDefault();
-          onNewIssue();
-        }
-        break;
+      switch (event.key.toLowerCase()) {
+        case 'n':
+          if (onNewIssue) {
+            event.preventDefault();
+            onNewIssue();
+          }
+          break;
 
-      case 'j':
-        if (onNavigateNext) {
-          event.preventDefault();
-          onNavigateNext();
-        }
-        break;
+        case 'j':
+          if (onNavigateNext) {
+            event.preventDefault();
+            onNavigateNext();
+          }
+          break;
 
-      case 'k':
-        if (onNavigatePrev) {
-          event.preventDefault();
-          onNavigatePrev();
-        }
-        break;
+        case 'k':
+          if (onNavigatePrev) {
+            event.preventDefault();
+            onNavigatePrev();
+          }
+          break;
 
-      case 'enter':
-        if (onOpenDetail) {
-          event.preventDefault();
-          onOpenDetail();
-        }
-        break;
+        case 'enter':
+          if (onOpenDetail) {
+            event.preventDefault();
+            onOpenDetail();
+          }
+          break;
 
-      case 'c':
-        if (onFocusComment) {
-          event.preventDefault();
-          onFocusComment();
-        }
-        break;
-    }
-  }, [onNewIssue, onNavigateNext, onNavigatePrev, onOpenDetail, onFocusComment]);
+        case 'c':
+          if (onFocusComment) {
+            event.preventDefault();
+            onFocusComment();
+          }
+          break;
+      }
+    },
+    [onNewIssue, onNavigateNext, onNavigatePrev, onOpenDetail, onFocusComment]
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);

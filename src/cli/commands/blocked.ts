@@ -1,7 +1,13 @@
-import { Command } from 'commander';
-import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getBlocked, getBlocking, getChildren, getBlockers, getComputedState, getAncestryChain } from '../lib/state.js';
-import { outputIssueList, outputIssueListVerbose, outputError, type VerboseIssueInfo, type LimitInfo } from '../lib/output.js';
+import {Command} from 'commander';
+import {getOrCreatePebbleDir} from '../lib/storage.js';
+import {getBlocked, getBlocking, getChildren, getBlockers, getComputedState, getAncestryChain} from '../lib/state.js';
+import {
+  outputIssueList,
+  outputIssueListVerbose,
+  outputError,
+  type VerboseIssueInfo,
+  type LimitInfo,
+} from '../lib/output.js';
 
 export function blockedCommand(program: Command): void {
   program
@@ -24,7 +30,7 @@ export function blockedCommand(program: Command): void {
 
         // Apply limit
         const total = issues.length;
-        const limit = options.all ? 0 : (options.limit ? parseInt(options.limit, 10) : 30);
+        const limit = options.all ? 0 : options.limit ? parseInt(options.limit, 10) : 30;
         if (limit > 0 && issues.length > limit) {
           issues = issues.slice(0, limit);
         }
@@ -42,9 +48,7 @@ export function blockedCommand(program: Command): void {
           const verboseIssues: VerboseIssueInfo[] = issues.map((issue) => {
             // Get open blockers (issues blocking this one that aren't closed)
             const allBlockers = getBlockers(issue.id);
-            const openBlockers = allBlockers
-              .filter((b) => b.status !== 'closed')
-              .map((b) => b.id);
+            const openBlockers = allBlockers.filter((b) => b.status !== 'closed').map((b) => b.id);
 
             return {
               issue,

@@ -4,11 +4,11 @@ Complete command reference for the pebble issue tracker CLI.
 
 ## Global Options
 
-| Option | Description |
-|--------|-------------|
-| `--pretty` | Format output as human-readable table (default: JSON) |
-| `--local` | Use local .pebble directory even in a git worktree |
-| `-h, --help` | Display help for a command |
+| Option       | Description                                           |
+| ------------ | ----------------------------------------------------- |
+| `--pretty`   | Format output as human-readable table (default: JSON) |
+| `--local`    | Use local .pebble directory even in a git worktree    |
+| `-h, --help` | Display help for a command                            |
 
 ## Commands
 
@@ -20,8 +20,8 @@ Initialize a new .pebble directory in the current directory.
 pb init [--force]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option    | Description                                  |
+| --------- | -------------------------------------------- |
 | `--force` | Re-initialize even if .pebble already exists |
 
 ### create
@@ -32,14 +32,14 @@ Create a new issue.
 pb create <title> [options]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `-t, --type <type>` | Issue type: task, bug, epic (default: task) |
-| `-p, --priority <n>` | Priority: 0 (critical) to 4 (backlog) (default: 2) |
-| `-d, --description <text>` | Issue description |
-| `--parent <id>` | Parent issue ID |
-| `--blocked-by <ids>` | Comma-separated IDs of blocking issues |
-| `--blocks <ids>` | Comma-separated IDs this issue will block |
+| Option                     | Description                                        |
+| -------------------------- | -------------------------------------------------- |
+| `-t, --type <type>`        | Issue type: task, bug, epic (default: task)        |
+| `-p, --priority <n>`       | Priority: 0 (critical) to 4 (backlog) (default: 2) |
+| `-d, --description <text>` | Issue description                                  |
+| `--parent <id>`            | Parent issue ID                                    |
+| `--blocked-by <ids>`       | Comma-separated IDs of blocking issues             |
+| `--blocks <ids>`           | Comma-separated IDs this issue will block          |
 
 ### update
 
@@ -49,15 +49,16 @@ Update an existing issue.
 pb update <id> [options]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--title <text>` | New title |
-| `-p, --priority <n>` | New priority (0-4) |
-| `-s, --status <status>` | New status: open, in_progress, blocked |
-| `-d, --description <text>` | New description |
-| `--parent <id>` | Parent issue ID (use "null" to remove) |
+| Option                     | Description                            |
+| -------------------------- | -------------------------------------- |
+| `--title <text>`           | New title                              |
+| `-p, --priority <n>`       | New priority (0-4)                     |
+| `-s, --status <status>`    | New status: open, in_progress, blocked |
+| `-d, --description <text>` | New description                        |
+| `--parent <id>`            | Parent issue ID (use "null" to remove) |
 
 **Notes:**
+
 - Cannot set status to `in_progress` if the issue has open blockers
 - Cannot set status to `closed` via update (use `pb close` instead)
 
@@ -69,9 +70,9 @@ Close one or more issues.
 pb close <id...> [options]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `-r, --reason <text>` | Reason for closing |
+| Option                 | Description                |
+| ---------------------- | -------------------------- |
+| `-r, --reason <text>`  | Reason for closing         |
 | `-c, --comment <text>` | Add comment before closing |
 
 ### reopen
@@ -82,8 +83,8 @@ Reopen a closed issue.
 pb reopen <id> [options]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                | Description          |
+| --------------------- | -------------------- |
 | `-r, --reason <text>` | Reason for reopening |
 
 ### delete
@@ -94,11 +95,12 @@ Soft delete one or more issues.
 pb delete <id...> [options]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                | Description         |
+| --------------------- | ------------------- |
 | `-r, --reason <text>` | Reason for deleting |
 
 **Notes:**
+
 - Deleted issues remain in history but are hidden by default
 - Deleting an epic cascades to all children
 - References in other issues (blockedBy, relatedTo, parent) are cleaned up
@@ -112,11 +114,12 @@ Restore one or more deleted issues.
 pb restore <id...> [options]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                | Description          |
+| --------------------- | -------------------- |
 | `-r, --reason <text>` | Reason for restoring |
 
 **Notes:**
+
 - Restoring does NOT auto-restore children — each issue must be restored individually
 
 ### claim
@@ -128,6 +131,7 @@ pb claim <id...>
 ```
 
 **Notes:**
+
 - Cannot claim a closed issue
 - Cannot claim an issue with open blockers (use `pb blocked -v` to see why)
 
@@ -139,21 +143,23 @@ List issues with filters.
 pb list [options]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `-t, --type <type>` | Filter by type |
-| `-s, --status <status>` | Filter by status |
-| `-p, --priority <n>` | Filter by priority |
-| `--parent <id>` | Filter by parent issue |
-| `-v, --verbose` | Show expanded details (flat list with parent, blocking) |
-| `--flat` | Show flat list instead of hierarchical tree |
+| Option                  | Description                                             |
+| ----------------------- | ------------------------------------------------------- |
+| `-t, --type <type>`     | Filter by type                                          |
+| `-s, --status <status>` | Filter by status                                        |
+| `-p, --priority <n>`    | Filter by priority                                      |
+| `--parent <id>`         | Filter by parent issue                                  |
+| `-v, --verbose`         | Show expanded details (flat list with parent, blocking) |
+| `--flat`                | Show flat list instead of hierarchical tree             |
 
 **Default output (tree):**
+
 - Hierarchical structure with children nested under parent issues
 - Status icons: ✓ closed, ▶ in_progress, ○ open
 - JSON uses nested `children` arrays
 
 **Verbose output (`-v`):**
+
 - Flat list with expanded details
 - Full issue title, type, priority, timestamps
 - Parent epic with title (if set)
@@ -174,11 +180,12 @@ Show issues ready for work (no open blockers).
 pb ready [options]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option          | Description                                        |
+| --------------- | -------------------------------------------------- |
 | `-v, --verbose` | Show expanded details (parent, children, blocking) |
 
 **Verbose output includes:**
+
 - Section header: `## Ready Issues (N)`
 - Full title (no truncation)
 - Type, priority, and relative timestamps
@@ -192,8 +199,8 @@ Show blocked issues (have open blockers).
 pb blocked [options]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option          | Description                                               |
+| --------------- | --------------------------------------------------------- |
 | `-v, --verbose` | Show expanded details including WHY each issue is blocked |
 
 ### dep
@@ -206,16 +213,17 @@ pb dep <command> <id> [id2] [options]
 
 **Subcommands:**
 
-| Command | Description |
-|---------|-------------|
-| `add <id> <blockerId>` | Add a blocking dependency (id is blocked by blockerId) |
-| `remove <id> <blockerId>` | Remove a blocking dependency |
-| `relate <id1> <id2>` | Add a bidirectional related link between two issues |
-| `unrelate <id1> <id2>` | Remove a bidirectional related link |
-| `list <id>` | List dependencies of an issue (shows blockedBy, blocking, and related) |
-| `tree <id>` | Visualize dependency tree (shows blockers recursively) |
+| Command                   | Description                                                            |
+| ------------------------- | ---------------------------------------------------------------------- |
+| `add <id> <blockerId>`    | Add a blocking dependency (id is blocked by blockerId)                 |
+| `remove <id> <blockerId>` | Remove a blocking dependency                                           |
+| `relate <id1> <id2>`      | Add a bidirectional related link between two issues                    |
+| `unrelate <id1> <id2>`    | Remove a bidirectional related link                                    |
+| `list <id>`               | List dependencies of an issue (shows blockedBy, blocking, and related) |
+| `tree <id>`               | Visualize dependency tree (shows blockers recursively)                 |
 
 **Related vs Blocked:**
+
 - **Blocking dependencies** are directional and affect the ready queue. If A blocks B, then B is blocked until A is closed.
 - **Related links** are bidirectional and don't affect ready status. They're for noting relationships between issues without implying order.
 
@@ -229,10 +237,10 @@ pb comments <command> <id> [text]
 
 **Subcommands:**
 
-| Command | Description |
-|---------|-------------|
-| `add <id> <text>` | Add a comment to an issue |
-| `list <id>` | List all comments on an issue |
+| Command           | Description                   |
+| ----------------- | ----------------------------- |
+| `add <id> <text>` | Add a comment to an issue     |
+| `list <id>`       | List all comments on an issue |
 
 ### graph
 
@@ -242,8 +250,8 @@ Display ASCII dependency graph.
 pb graph [options]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option        | Description                                |
+| ------------- | ------------------------------------------ |
 | `--root <id>` | Filter to subtree rooted at specific issue |
 
 ### summary
@@ -254,13 +262,14 @@ Show epic summary with child completion counts.
 pb summary [options]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--status <status>` | Filter epics by status |
-| `--limit <n>` | Max epics to return (default: 10) |
-| `--include-closed` | Include closed epics (shows "Recently Closed Epics" section) |
+| Option              | Description                                                  |
+| ------------------- | ------------------------------------------------------------ |
+| `--status <status>` | Filter epics by status                                       |
+| `--limit <n>`       | Max epics to return (default: 10)                            |
+| `--include-closed`  | Include closed epics (shows "Recently Closed Epics" section) |
 
 **Pretty output includes:**
+
 - Section headers: `## Open Epics (N)` or `## Recently Closed Epics (N)`
 - Full description (no truncation)
 - Relative timestamps: Created and Updated
@@ -275,8 +284,8 @@ Show recent activity log.
 pb history [options]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option            | Description                            |
+| ----------------- | -------------------------------------- |
 | `-n, --limit <n>` | Number of events to show (default: 20) |
 
 ### search
@@ -303,8 +312,8 @@ Merge multiple issues.jsonl files.
 pb merge <files...> [options]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                | Description                   |
+| --------------------- | ----------------------------- |
 | `-o, --output <file>` | Output file (default: stdout) |
 
 ### ui
@@ -315,38 +324,38 @@ Start the web UI server.
 pb ui [options]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option           | Description                                      |
+| ---------------- | ------------------------------------------------ |
 | `-p, --port <n>` | Port number (default: 3333, env: PEBBLE_UI_PORT) |
 
 ## Valid Values
 
 ### Types
 
-| Type | Description |
-|------|-------------|
-| `task` | A single unit of work |
-| `bug` | A defect to fix |
+| Type   | Description                    |
+| ------ | ------------------------------ |
+| `task` | A single unit of work          |
+| `bug`  | A defect to fix                |
 | `epic` | A container for related issues |
 
 ### Statuses
 
-| Status | Description |
-|--------|-------------|
-| `open` | Not started |
+| Status        | Description               |
+| ------------- | ------------------------- |
+| `open`        | Not started               |
 | `in_progress` | Currently being worked on |
-| `blocked` | Waiting on dependencies |
-| `closed` | Completed |
+| `blocked`     | Waiting on dependencies   |
+| `closed`      | Completed                 |
 
 ### Priorities
 
-| Priority | Label |
-|----------|-------|
-| 0 | Critical |
-| 1 | High |
-| 2 | Medium |
-| 3 | Low |
-| 4 | Backlog |
+| Priority | Label    |
+| -------- | -------- |
+| 0        | Critical |
+| 1        | High     |
+| 2        | Medium   |
+| 3        | Low      |
+| 4        | Backlog  |
 
 ## Examples
 

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import {useMemo} from 'react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -14,10 +14,10 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
-import { EventTimeline } from './EventTimeline';
-import type { Issue, IssueEvent, Status, IssueType, Priority } from '../../shared/types';
-import { useTheme } from '../contexts/ThemeContext';
-import { getCommonPrefix, getRelativePath } from '../lib/path';
+import {EventTimeline} from './EventTimeline';
+import type {Issue, IssueEvent, Status, IssueType, Priority} from '../../shared/types';
+import {useTheme} from '../contexts/ThemeContext';
+import {getCommonPrefix, getRelativePath} from '../lib/path';
 
 interface DashboardProps {
   issues: Issue[];
@@ -58,8 +58,8 @@ const PRIORITY_LABELS: Record<Priority, string> = {
   4: 'P4 - Backlog',
 };
 
-export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: DashboardProps) {
-  const { resolvedTheme } = useTheme();
+export function Dashboard({issues, events, onSelectIssue, onFilterByStatus}: DashboardProps) {
+  const {resolvedTheme} = useTheme();
   const isDark = resolvedTheme === 'dark';
 
   // Chart theming
@@ -72,7 +72,7 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
 
   // Compute metrics
   const metrics = useMemo(() => {
-    const counts = { open: 0, in_progress: 0, blocked: 0, closed: 0 };
+    const counts = {open: 0, in_progress: 0, blocked: 0, closed: 0};
     for (const issue of issues) {
       counts[issue.status]++;
     }
@@ -86,12 +86,12 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     // Group events by date
-    const byDate = new Map<string, { create: number; update: number; close: number; comment: number }>();
+    const byDate = new Map<string, {create: number; update: number; close: number; comment: number}>();
 
     // Initialize all dates in range
     for (let d = new Date(thirtyDaysAgo); d <= now; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
-      byDate.set(dateStr, { create: 0, update: 0, close: 0, comment: 0 });
+      byDate.set(dateStr, {create: 0, update: 0, close: 0, comment: 0});
     }
 
     // Count events
@@ -112,7 +112,7 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
     // Convert to array for chart
     return Array.from(byDate.entries())
       .map(([date, counts]) => ({
-        date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: new Date(date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}),
         ...counts,
       }))
       .slice(-14); // Show last 14 days for readability
@@ -120,20 +120,20 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
 
   // Type distribution data
   const typeData = useMemo(() => {
-    const counts: Record<IssueType, number> = { task: 0, bug: 0, epic: 0 };
+    const counts: Record<IssueType, number> = {task: 0, bug: 0, epic: 0};
     for (const issue of issues) {
       counts[issue.type]++;
     }
     return [
-      { name: 'Task', value: counts.task },
-      { name: 'Bug', value: counts.bug },
-      { name: 'Epic', value: counts.epic },
+      {name: 'Task', value: counts.task},
+      {name: 'Bug', value: counts.bug},
+      {name: 'Epic', value: counts.epic},
     ].filter((d) => d.value > 0);
   }, [issues]);
 
   // Priority distribution data (horizontal bar)
   const priorityData = useMemo(() => {
-    const counts: Record<Priority, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+    const counts: Record<Priority, number> = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0};
     for (const issue of issues) {
       counts[issue.priority]++;
     }
@@ -147,17 +147,17 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
   // Status breakdown by type (stacked bar)
   const statusByTypeData = useMemo(() => {
     const data: Record<IssueType, Record<Status, number>> = {
-      task: { open: 0, in_progress: 0, blocked: 0, closed: 0 },
-      bug: { open: 0, in_progress: 0, blocked: 0, closed: 0 },
-      epic: { open: 0, in_progress: 0, blocked: 0, closed: 0 },
+      task: {open: 0, in_progress: 0, blocked: 0, closed: 0},
+      bug: {open: 0, in_progress: 0, blocked: 0, closed: 0},
+      epic: {open: 0, in_progress: 0, blocked: 0, closed: 0},
     };
     for (const issue of issues) {
       data[issue.type][issue.status]++;
     }
     return [
-      { name: 'Task', ...data.task },
-      { name: 'Bug', ...data.bug },
-      { name: 'Epic', ...data.epic },
+      {name: 'Task', ...data.task},
+      {name: 'Bug', ...data.bug},
+      {name: 'Epic', ...data.epic},
     ];
   }, [issues]);
 
@@ -236,13 +236,8 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={activityData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: chartColors.text, fontSize: 11 }}
-                />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: chartColors.text, fontSize: 11 }} />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: chartColors.text, fontSize: 11}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: chartColors.text, fontSize: 11}} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: chartColors.tooltipBg,
@@ -306,14 +301,11 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
                   cy="50%"
                   innerRadius={50}
                   outerRadius={80}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
                   labelLine={false}
                 >
                   {typeData.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={TYPE_COLORS[entry.name.toLowerCase() as IssueType] || '#6b7280'}
-                    />
+                    <Cell key={entry.name} fill={TYPE_COLORS[entry.name.toLowerCase() as IssueType] || '#6b7280'} />
                   ))}
                 </Pie>
                 <Tooltip
@@ -339,13 +331,13 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={priorityData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} horizontal={false} />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: chartColors.text, fontSize: 11 }} />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: chartColors.text, fontSize: 11}} />
                 <YAxis
                   type="category"
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: chartColors.text, fontSize: 11 }}
+                  tick={{fill: chartColors.text, fontSize: 11}}
                   width={100}
                 />
                 <Tooltip
@@ -372,13 +364,8 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={statusByTypeData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: chartColors.text, fontSize: 11 }}
-                />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: chartColors.text, fontSize: 11 }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: chartColors.text, fontSize: 11}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: chartColors.text, fontSize: 11}} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: chartColors.tooltipBg,
@@ -405,13 +392,13 @@ export function Dashboard({ issues, events, onSelectIssue, onFilterByStatus }: D
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={sourceData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} horizontal={false} />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: chartColors.text, fontSize: 11 }} />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: chartColors.text, fontSize: 11}} />
                 <YAxis
                   type="category"
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: chartColors.text, fontSize: 11 }}
+                  tick={{fill: chartColors.text, fontSize: 11}}
                   width={200}
                 />
                 <Tooltip
@@ -452,12 +439,12 @@ interface MetricCardProps {
   onClick?: () => void;
 }
 
-function MetricCard({ label, value, color, onClick }: MetricCardProps) {
+function MetricCard({label, value, color, onClick}: MetricCardProps) {
   return (
     <button
       onClick={onClick}
       className="bg-card border rounded-lg p-4 text-left hover:bg-muted transition-colors cursor-pointer"
-      style={{ borderLeftColor: color, borderLeftWidth: '4px' }}
+      style={{borderLeftColor: color, borderLeftWidth: '4px'}}
     >
       <div className="text-sm text-muted-foreground">{label}</div>
       <div className="text-3xl font-bold mt-1">{value}</div>

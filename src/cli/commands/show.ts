@@ -1,7 +1,15 @@
-import { Command } from 'commander';
-import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getIssue, resolveId, getBlocking, getChildren, getRelated, getComputedState, getAncestryChain } from '../lib/state.js';
-import { outputIssueDetail, outputError } from '../lib/output.js';
+import {Command} from 'commander';
+import {getOrCreatePebbleDir} from '../lib/storage.js';
+import {
+  getIssue,
+  resolveId,
+  getBlocking,
+  getChildren,
+  getRelated,
+  getComputedState,
+  getAncestryChain,
+} from '../lib/state.js';
+import {outputIssueDetail, outputError} from '../lib/output.js';
 
 export function showCommand(program: Command): void {
   program
@@ -27,7 +35,7 @@ export function showCommand(program: Command): void {
         const state = getComputedState();
         const ancestry = getAncestryChain(resolvedId, state);
 
-        outputIssueDetail(issue, { blocking, children, related, ancestry }, pretty);
+        outputIssueDetail(issue, {blocking, children, related, ancestry}, pretty);
       } catch (error) {
         outputError(error as Error, pretty);
       }

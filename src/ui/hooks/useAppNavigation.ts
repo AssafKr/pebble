@@ -1,35 +1,26 @@
-import { useCallback, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import type { Issue } from '../../shared/types';
-import {
-  isAppView,
-  issuePath,
-  parseRouteParams,
-  viewPath,
-  type AppView,
-} from '../lib/routes';
+import {useCallback, useMemo} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
+import type {Issue} from '../../shared/types';
+import {isAppView, issuePath, parseRouteParams, viewPath, type AppView} from '../lib/routes';
 
 export function useAppNavigation() {
-  const { view: viewParam, issueId: issueIdParam } = useParams();
+  const {view: viewParam, issueId: issueIdParam} = useParams();
   const navigate = useNavigate();
 
-  const { view, issueId } = useMemo(
-    () => parseRouteParams(viewParam, issueIdParam),
-    [viewParam, issueIdParam],
-  );
+  const {view, issueId} = useMemo(() => parseRouteParams(viewParam, issueIdParam), [viewParam, issueIdParam]);
 
   const goToView = useCallback(
     (newView: AppView) => {
       navigate(viewPath(newView));
     },
-    [navigate],
+    [navigate]
   );
 
   const selectIssue = useCallback(
     (issue: Issue) => {
       navigate(issuePath(view, issue.id));
     },
-    [navigate, view],
+    [navigate, view]
   );
 
   const closeIssue = useCallback(() => {

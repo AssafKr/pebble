@@ -1,7 +1,7 @@
-import { Command } from 'commander';
-import express, { Response } from 'express';
+import {Command} from 'commander';
+import express, {Response} from 'express';
 import cors from 'cors';
-import { fileURLToPath } from 'url';
+import {fileURLToPath} from 'url';
 import path from 'path';
 import fs from 'fs';
 import net from 'net';
@@ -17,15 +17,9 @@ import {
   getComputedState,
   getAncestryBlocker,
 } from '../lib/state.js';
-import {
-  readEventsFromFile,
-  getOrCreatePebbleDir,
-  appendEvent,
-  getConfig,
-  getEventSource,
-} from '../lib/storage.js';
-import { generateId } from '../lib/id.js';
-import { outputError } from '../lib/output.js';
+import {readEventsFromFile, getOrCreatePebbleDir, appendEvent, getConfig, getEventSource} from '../lib/storage.js';
+import {generateId} from '../lib/id.js';
+import {outputError} from '../lib/output.js';
 import type {
   CreateEvent,
   UpdateEvent,
@@ -39,7 +33,7 @@ import type {
   Priority,
   Issue,
 } from '../../shared/types.js';
-import { ISSUE_TYPES, STATUSES, PRIORITIES } from '../../shared/types.js';
+import {ISSUE_TYPES, STATUSES, PRIORITIES} from '../../shared/types.js';
 
 // Check if a port is available
 function isPortAvailable(port: number): Promise<boolean> {
@@ -88,9 +82,7 @@ function mergeEventsFromFiles(filePaths: string[]): IssueEvent[] {
   }
 
   // Sort by timestamp ascending (chronological order)
-  return Array.from(merged.values()).sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
+  return Array.from(merged.values()).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 }
 
 /**
@@ -99,7 +91,7 @@ function mergeEventsFromFiles(filePaths: string[]): IssueEvent[] {
  * Tracks which file(s) contain each issue.
  */
 function mergeIssuesFromFiles(filePaths: string[]): IssueWithSource[] {
-  const merged = new Map<string, { issue: Issue; sources: Set<string> }>();
+  const merged = new Map<string, {issue: Issue; sources: Set<string>}>();
 
   for (const filePath of filePaths) {
     const events = readEventsFromFile(filePath);
@@ -109,18 +101,18 @@ function mergeIssuesFromFiles(filePaths: string[]): IssueWithSource[] {
       const existing = merged.get(id);
       if (!existing) {
         // First time seeing this issue
-        merged.set(id, { issue, sources: new Set([filePath]) });
+        merged.set(id, {issue, sources: new Set([filePath])});
       } else {
         // Issue exists in multiple files - keep the one with latest updatedAt
         existing.sources.add(filePath);
         if (new Date(issue.updatedAt) > new Date(existing.issue.updatedAt)) {
-          merged.set(id, { issue, sources: existing.sources });
+          merged.set(id, {issue, sources: existing.sources});
         }
       }
     }
   }
 
-  return Array.from(merged.values()).map(({ issue, sources }) => ({
+  return Array.from(merged.values()).map(({issue, sources}) => ({
     ...issue,
     _sources: Array.from(sources),
   }));
@@ -130,10 +122,7 @@ function mergeIssuesFromFiles(filePaths: string[]): IssueWithSource[] {
  * Find an issue by ID across all source files.
  * Returns the issue and which file to write mutations to.
  */
-function findIssueInSources(
-  issueId: string,
-  filePaths: string[]
-): { issue: Issue; targetFile: string } | null {
+function findIssueInSources(issueId: string, filePaths: string[]): {issue: Issue; targetFile: string} | null {
   // First, try to find by exact ID or prefix match
   const allIssues = mergeIssuesFromFiles(filePaths);
 
@@ -156,7 +145,7 @@ function findIssueInSources(
 
   // Use the first source file (where the issue was most recently updated)
   const targetFile = found._sources[0];
-  return { issue: found, targetFile };
+  return {issue: found, targetFile};
 }
 
 /**
@@ -165,7 +154,7 @@ function findIssueInSources(
  */
 function appendEventToFile(event: IssueEvent, filePath: string): void {
   // Add source if not already present
-  const eventWithSource = event.source ? event : { ...event, source: getEventSource() };
+  const eventWithSource = event.source ? event : {...event, source: getEventSource()};
   const line = JSON.stringify(eventWithSource) + '\n';
   fs.appendFileSync(filePath, line, 'utf-8');
 }
@@ -187,7 +176,10 @@ export function uiCommand(program: Command): void {
         let issueFiles: string[] = [];
         if (options.files) {
           // Parse comma-separated paths
-          issueFiles = options.files.split(',').map((p: string) => p.trim()).filter(Boolean);
+          issueFiles = options.files
+            .split(',')
+            .map((p: string) => p.trim())
+            .filter(Boolean);
           if (issueFiles.length === 0) {
             console.error('Error: --files option requires at least one path');
             process.exit(1);
@@ -223,18 +215,18 @@ export function uiCommand(program: Command): void {
         // GET /api/sources - Returns available issue files (for multi-worktree)
         app.get('/api/sources', (_req, res) => {
           try {
-            res.json({ files: issueFiles, isMultiWorktree: isMultiWorktree() });
+            res.json({files: issueFiles, isMultiWorktree: isMultiWorktree()});
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
         // POST /api/sources - Add a new issue file to watch
         app.post('/api/sources', (req, res) => {
           try {
-            const { path: filePath } = req.body;
+            const {path: filePath} = req.body;
             if (!filePath || typeof filePath !== 'string') {
-              res.status(400).json({ error: 'path is required' });
+              res.status(400).json({error: 'path is required'});
               return;
             }
 
@@ -242,13 +234,13 @@ export function uiCommand(program: Command): void {
 
             // Check if file exists
             if (!fs.existsSync(resolved)) {
-              res.status(400).json({ error: `File not found: ${filePath}` });
+              res.status(400).json({error: `File not found: ${filePath}`});
               return;
             }
 
             // Check if already watching
             if (issueFiles.includes(resolved)) {
-              res.status(400).json({ error: 'File already being watched' });
+              res.status(400).json({error: 'File already being watched'});
               return;
             }
 
@@ -257,9 +249,9 @@ export function uiCommand(program: Command): void {
             watcher.add(resolved);
 
             console.log(`Added source: ${resolved}`);
-            res.json({ files: issueFiles, isMultiWorktree: isMultiWorktree() });
+            res.json({files: issueFiles, isMultiWorktree: isMultiWorktree()});
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -268,13 +260,13 @@ export function uiCommand(program: Command): void {
           try {
             const index = parseInt(req.params.index, 10);
             if (isNaN(index) || index < 0 || index >= issueFiles.length) {
-              res.status(400).json({ error: `Invalid index: ${req.params.index}` });
+              res.status(400).json({error: `Invalid index: ${req.params.index}`});
               return;
             }
 
             // Don't allow removing the last file
             if (issueFiles.length === 1) {
-              res.status(400).json({ error: 'Cannot remove the last source file' });
+              res.status(400).json({error: 'Cannot remove the last source file'});
               return;
             }
 
@@ -282,16 +274,16 @@ export function uiCommand(program: Command): void {
             watcher.unwatch(removed);
 
             console.log(`Removed source: ${removed}`);
-            res.json({ files: issueFiles, isMultiWorktree: isMultiWorktree() });
+            res.json({files: issueFiles, isMultiWorktree: isMultiWorktree()});
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
         // GET /api/worktrees - Detect git worktrees with .pebble/issues.jsonl
         app.get('/api/worktrees', (_req, res) => {
           try {
-            const { execSync } = require('child_process');
+            const {execSync} = require('child_process');
             let worktreeOutput: string;
             try {
               worktreeOutput = execSync('git worktree list --porcelain', {
@@ -300,7 +292,7 @@ export function uiCommand(program: Command): void {
               });
             } catch {
               // Not a git repo or git not available
-              res.json({ worktrees: [] });
+              res.json({worktrees: []});
               return;
             }
 
@@ -352,9 +344,9 @@ export function uiCommand(program: Command): void {
               }
             }
 
-            res.json({ worktrees });
+            res.json({worktrees});
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -364,7 +356,7 @@ export function uiCommand(program: Command): void {
             const issues = mergeIssuesFromFiles(issueFiles);
             res.json(issues);
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -374,7 +366,7 @@ export function uiCommand(program: Command): void {
             const events = mergeEventsFromFiles(issueFiles);
             res.json(events);
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -419,7 +411,7 @@ export function uiCommand(program: Command): void {
         watcher.on('change', () => {
           // Broadcast change to all SSE clients with event ID
           eventCounter++;
-          const message = JSON.stringify({ type: 'change', timestamp: new Date().toISOString() });
+          const message = JSON.stringify({type: 'change', timestamp: new Date().toISOString()});
           for (const client of sseClients) {
             client.write(`id: ${eventCounter}\ndata: ${message}\n\n`);
           }
@@ -443,7 +435,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree() && req.query.target !== undefined) {
               const targetIndex = parseInt(req.query.target as string, 10);
               if (isNaN(targetIndex) || targetIndex < 0 || targetIndex >= issueFiles.length) {
-                res.status(400).json({ error: `Invalid target index: ${req.query.target}` });
+                res.status(400).json({error: `Invalid target index: ${req.query.target}`});
                 return;
               }
               targetFile = issueFiles[targetIndex];
@@ -452,34 +444,34 @@ export function uiCommand(program: Command): void {
             // Get pebbleDir - for multi-worktree with target, derive from target file path
             const pebbleDir = targetFile ? path.dirname(targetFile) : getOrCreatePebbleDir();
             const config = getConfig(pebbleDir);
-            const { title, type, priority, description, parent } = req.body;
+            const {title, type, priority, description, parent} = req.body;
 
             // Validate required fields
             if (!title || typeof title !== 'string') {
-              res.status(400).json({ error: 'Title is required' });
+              res.status(400).json({error: 'Title is required'});
               return;
             }
 
             // Validate type
             const issueType: IssueType = type || 'task';
             if (!ISSUE_TYPES.includes(issueType)) {
-              res.status(400).json({ error: `Invalid type. Must be one of: ${ISSUE_TYPES.join(', ')}` });
+              res.status(400).json({error: `Invalid type. Must be one of: ${ISSUE_TYPES.join(', ')}`});
               return;
             }
 
             // Validate priority
             const issuePriority: Priority = priority ?? 2;
             if (!PRIORITIES.includes(issuePriority)) {
-              res.status(400).json({ error: 'Priority must be 0-4' });
+              res.status(400).json({error: 'Priority must be 0-4'});
               return;
             }
 
             // Validate parent if provided
-            const parentsReopened: Array<{ id: string; title: string }> = [];
+            const parentsReopened: Array<{id: string; title: string}> = [];
             if (parent) {
               const parentIssue = getIssue(parent);
               if (!parentIssue) {
-                res.status(400).json({ error: `Parent issue not found: ${parent}` });
+                res.status(400).json({error: `Parent issue not found: ${parent}`});
                 return;
               }
               // Auto-reopen closed ancestors in the entire chain
@@ -491,10 +483,10 @@ export function uiCommand(program: Command): void {
                     type: 'reopen',
                     issueId: current.id,
                     timestamp: new Date().toISOString(),
-                    data: { reason: 'Reopened to add descendant' },
+                    data: {reason: 'Reopened to add descendant'},
                   };
                   appendEvent(reopenEvent, pebbleDir);
-                  parentsReopened.push({ id: current.id, title: current.title });
+                  parentsReopened.push({id: current.id, title: current.title});
                 }
                 current = current.parent ? state.get(current.parent) : undefined;
               }
@@ -530,10 +522,10 @@ export function uiCommand(program: Command): void {
             }
 
             const issue = getIssue(issueId);
-            const result = parentsReopened.length > 0 ? { ...issue, _parentsReopened: parentsReopened } : issue;
+            const result = parentsReopened.length > 0 ? {...issue, _parentsReopened: parentsReopened} : issue;
             res.status(201).json(result);
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -544,32 +536,32 @@ export function uiCommand(program: Command): void {
         app.post('/api/issues/bulk/close', (req, res) => {
           try {
             const pebbleDir = getOrCreatePebbleDir();
-            const { ids } = req.body as { ids: string[] };
+            const {ids} = req.body as {ids: string[]};
 
             if (!ids || !Array.isArray(ids) || ids.length === 0) {
-              res.status(400).json({ error: 'ids array is required' });
+              res.status(400).json({error: 'ids array is required'});
               return;
             }
 
-            const results: Array<{ id: string; success: boolean; error?: string }> = [];
+            const results: Array<{id: string; success: boolean; error?: string}> = [];
 
             for (const rawId of ids) {
               try {
                 const issueId = resolveId(rawId);
                 const issue = getIssue(issueId);
                 if (!issue) {
-                  results.push({ id: rawId, success: false, error: `Issue not found: ${rawId}` });
+                  results.push({id: rawId, success: false, error: `Issue not found: ${rawId}`});
                   continue;
                 }
 
                 if (issue.status === 'closed') {
-                  results.push({ id: issueId, success: true }); // Already closed
+                  results.push({id: issueId, success: true}); // Already closed
                   continue;
                 }
 
                 // Check if issue has open children
                 if (hasOpenChildren(issueId)) {
-                  results.push({ id: issueId, success: false, error: 'Cannot close issue with open children' });
+                  results.push({id: issueId, success: false, error: 'Cannot close issue with open children'});
                   continue;
                 }
 
@@ -579,19 +571,19 @@ export function uiCommand(program: Command): void {
                   issueId,
                   timestamp,
                   type: 'close',
-                  data: { reason: 'Bulk close' },
+                  data: {reason: 'Bulk close'},
                 };
 
                 appendEvent(event, pebbleDir);
-                results.push({ id: issueId, success: true });
+                results.push({id: issueId, success: true});
               } catch (error) {
-                results.push({ id: rawId, success: false, error: (error as Error).message });
+                results.push({id: rawId, success: false, error: (error as Error).message});
               }
             }
 
-            res.json({ results });
+            res.json({results});
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -599,18 +591,18 @@ export function uiCommand(program: Command): void {
         app.post('/api/issues/bulk/update', (req, res) => {
           try {
             const pebbleDir = getOrCreatePebbleDir();
-            const { ids, updates } = req.body as {
+            const {ids, updates} = req.body as {
               ids: string[];
-              updates: { status?: string; priority?: number };
+              updates: {status?: string; priority?: number};
             };
 
             if (!ids || !Array.isArray(ids) || ids.length === 0) {
-              res.status(400).json({ error: 'ids array is required' });
+              res.status(400).json({error: 'ids array is required'});
               return;
             }
 
             if (!updates || Object.keys(updates).length === 0) {
-              res.status(400).json({ error: 'updates object is required' });
+              res.status(400).json({error: 'updates object is required'});
               return;
             }
 
@@ -628,19 +620,19 @@ export function uiCommand(program: Command): void {
             // Validate priority if provided
             if (updates.priority !== undefined) {
               if (typeof updates.priority !== 'number' || updates.priority < 0 || updates.priority > 4) {
-                res.status(400).json({ error: 'Priority must be 0-4' });
+                res.status(400).json({error: 'Priority must be 0-4'});
                 return;
               }
             }
 
-            const results: Array<{ id: string; success: boolean; error?: string }> = [];
+            const results: Array<{id: string; success: boolean; error?: string}> = [];
 
             for (const rawId of ids) {
               try {
                 const issueId = resolveId(rawId);
                 const issue = getIssue(issueId);
                 if (!issue) {
-                  results.push({ id: rawId, success: false, error: `Issue not found: ${rawId}` });
+                  results.push({id: rawId, success: false, error: `Issue not found: ${rawId}`});
                   continue;
                 }
 
@@ -649,21 +641,21 @@ export function uiCommand(program: Command): void {
                   timestamp: new Date().toISOString(),
                   type: 'update',
                   data: {
-                    ...(updates.status && { status: updates.status as 'open' | 'in_progress' | 'blocked' }),
-                    ...(updates.priority !== undefined && { priority: updates.priority as 0 | 1 | 2 | 3 | 4 }),
+                    ...(updates.status && {status: updates.status as 'open' | 'in_progress' | 'blocked'}),
+                    ...(updates.priority !== undefined && {priority: updates.priority as 0 | 1 | 2 | 3 | 4}),
                   },
                 };
 
                 appendEvent(event, pebbleDir);
-                results.push({ id: issueId, success: true });
+                results.push({id: issueId, success: true});
               } catch (error) {
-                results.push({ id: rawId, success: false, error: (error as Error).message });
+                results.push({id: rawId, success: false, error: (error as Error).message});
               }
             }
 
-            res.json({ results });
+            res.json({results});
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -677,7 +669,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const found = findIssueInSources(req.params.id, issueFiles);
               if (!found) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = found.issue;
@@ -688,20 +680,20 @@ export function uiCommand(program: Command): void {
               issueId = resolveId(req.params.id);
               const localIssue = getIssue(issueId);
               if (!localIssue) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = localIssue;
               targetFile = path.join(pebbleDir, 'issues.jsonl');
             }
 
-            const { title, type, priority, status, description, parent, relatedTo } = req.body;
+            const {title, type, priority, status, description, parent, relatedTo} = req.body;
             const updates: UpdateEvent['data'] = {};
 
             // Validate and collect updates
             if (title !== undefined) {
               if (typeof title !== 'string' || title.trim() === '') {
-                res.status(400).json({ error: 'Title cannot be empty' });
+                res.status(400).json({error: 'Title cannot be empty'});
                 return;
               }
               updates.title = title;
@@ -709,7 +701,7 @@ export function uiCommand(program: Command): void {
 
             if (type !== undefined) {
               if (!ISSUE_TYPES.includes(type)) {
-                res.status(400).json({ error: `Invalid type. Must be one of: ${ISSUE_TYPES.join(', ')}` });
+                res.status(400).json({error: `Invalid type. Must be one of: ${ISSUE_TYPES.join(', ')}`});
                 return;
               }
               updates.type = type;
@@ -717,18 +709,18 @@ export function uiCommand(program: Command): void {
 
             if (priority !== undefined) {
               if (!PRIORITIES.includes(priority)) {
-                res.status(400).json({ error: 'Priority must be 0-4' });
+                res.status(400).json({error: 'Priority must be 0-4'});
                 return;
               }
               updates.priority = priority;
             }
 
             // Track parents that need to be claimed (for cascade)
-            const cascadeClaim: Array<{ id: string; targetFile: string }> = [];
+            const cascadeClaim: Array<{id: string; targetFile: string}> = [];
 
             if (status !== undefined) {
               if (!STATUSES.includes(status)) {
-                res.status(400).json({ error: `Invalid status. Must be one of: ${STATUSES.join(', ')}` });
+                res.status(400).json({error: `Invalid status. Must be one of: ${STATUSES.join(', ')}`});
                 return;
               }
 
@@ -736,7 +728,7 @@ export function uiCommand(program: Command): void {
               if (status === 'in_progress' && issue.status !== 'in_progress') {
                 // Get computed state for blocker checks
                 const state = isMultiWorktree()
-                  ? computeState(issueFiles.flatMap(f => readEventsFromFile(f)))
+                  ? computeState(issueFiles.flatMap((f) => readEventsFromFile(f)))
                   : getComputedState();
 
                 // Check if issue itself is blocked (exclude deleted blockers)
@@ -777,7 +769,7 @@ export function uiCommand(program: Command): void {
                         parentTargetFile = parentFound.targetFile;
                       }
                     }
-                    cascadeClaim.push({ id: parent.id, targetFile: parentTargetFile });
+                    cascadeClaim.push({id: parent.id, targetFile: parentTargetFile});
                   }
                   current = parent;
                 }
@@ -796,13 +788,13 @@ export function uiCommand(program: Command): void {
                 if (isMultiWorktree()) {
                   const parentFound = findIssueInSources(parent, issueFiles);
                   if (!parentFound) {
-                    res.status(400).json({ error: `Parent issue not found: ${parent}` });
+                    res.status(400).json({error: `Parent issue not found: ${parent}`});
                     return;
                   }
                 } else {
                   const parentIssue = getIssue(parent);
                   if (!parentIssue) {
-                    res.status(400).json({ error: `Parent issue not found: ${parent}` });
+                    res.status(400).json({error: `Parent issue not found: ${parent}`});
                     return;
                   }
                 }
@@ -812,7 +804,7 @@ export function uiCommand(program: Command): void {
 
             if (relatedTo !== undefined) {
               if (!Array.isArray(relatedTo)) {
-                res.status(400).json({ error: 'relatedTo must be an array' });
+                res.status(400).json({error: 'relatedTo must be an array'});
                 return;
               }
               // Validate all related IDs exist
@@ -820,13 +812,13 @@ export function uiCommand(program: Command): void {
                 if (isMultiWorktree()) {
                   const found = findIssueInSources(relatedId, issueFiles);
                   if (!found) {
-                    res.status(400).json({ error: `Related issue not found: ${relatedId}` });
+                    res.status(400).json({error: `Related issue not found: ${relatedId}`});
                     return;
                   }
                 } else {
                   const relatedIssue = getIssue(relatedId);
                   if (!relatedIssue) {
-                    res.status(400).json({ error: `Related issue not found: ${relatedId}` });
+                    res.status(400).json({error: `Related issue not found: ${relatedId}`});
                     return;
                   }
                 }
@@ -835,7 +827,7 @@ export function uiCommand(program: Command): void {
             }
 
             if (Object.keys(updates).length === 0) {
-              res.status(400).json({ error: 'No valid updates provided' });
+              res.status(400).json({error: 'No valid updates provided'});
               return;
             }
 
@@ -851,12 +843,12 @@ export function uiCommand(program: Command): void {
 
             // Emit cascade claim events for open parents
             const cascadeClaimedIds: string[] = [];
-            for (const { id, targetFile: parentTargetFile } of cascadeClaim) {
+            for (const {id, targetFile: parentTargetFile} of cascadeClaim) {
               const cascadeEvent: UpdateEvent = {
                 type: 'update',
                 issueId: id,
                 timestamp,
-                data: { status: 'in_progress' },
+                data: {status: 'in_progress'},
               };
               appendEventToFile(cascadeEvent, parentTargetFile);
               cascadeClaimedIds.push(id);
@@ -864,22 +856,22 @@ export function uiCommand(program: Command): void {
 
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
-              const baseIssue = updated?.issue || { ...issue, ...updates, updatedAt: timestamp };
+              const baseIssue = updated?.issue || {...issue, ...updates, updatedAt: timestamp};
               if (cascadeClaimedIds.length > 0) {
-                res.json({ ...baseIssue, _cascadeClaimed: cascadeClaimedIds });
+                res.json({...baseIssue, _cascadeClaimed: cascadeClaimedIds});
               } else {
                 res.json(baseIssue);
               }
             } else {
               const updatedIssue = getIssue(issueId);
               if (cascadeClaimedIds.length > 0) {
-                res.json({ ...updatedIssue, _cascadeClaimed: cascadeClaimedIds });
+                res.json({...updatedIssue, _cascadeClaimed: cascadeClaimedIds});
               } else {
                 res.json(updatedIssue);
               }
             }
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -893,7 +885,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const found = findIssueInSources(req.params.id, issueFiles);
               if (!found) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = found.issue;
@@ -904,7 +896,7 @@ export function uiCommand(program: Command): void {
               issueId = resolveId(req.params.id);
               const localIssue = getIssue(issueId);
               if (!localIssue) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = localIssue;
@@ -912,24 +904,24 @@ export function uiCommand(program: Command): void {
             }
 
             if (issue.status === 'closed') {
-              res.status(400).json({ error: 'Issue is already closed' });
+              res.status(400).json({error: 'Issue is already closed'});
               return;
             }
 
             // Check if issue has open children (single-file mode only)
             if (!isMultiWorktree() && hasOpenChildren(issueId)) {
-              res.status(400).json({ error: 'Cannot close issue with open children' });
+              res.status(400).json({error: 'Cannot close issue with open children'});
               return;
             }
 
-            const { reason } = req.body;
+            const {reason} = req.body;
             const timestamp = new Date().toISOString();
 
             const event: CloseEvent = {
               type: 'close',
               issueId,
               timestamp,
-              data: { reason },
+              data: {reason},
             };
 
             appendEventToFile(event, targetFile);
@@ -937,12 +929,12 @@ export function uiCommand(program: Command): void {
             // Return updated issue
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
-              res.json(updated?.issue || { ...issue, status: 'closed', updatedAt: timestamp });
+              res.json(updated?.issue || {...issue, status: 'closed', updatedAt: timestamp});
             } else {
               res.json(getIssue(issueId));
             }
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -956,7 +948,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const found = findIssueInSources(req.params.id, issueFiles);
               if (!found) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = found.issue;
@@ -967,7 +959,7 @@ export function uiCommand(program: Command): void {
               issueId = resolveId(req.params.id);
               const localIssue = getIssue(issueId);
               if (!localIssue) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = localIssue;
@@ -975,30 +967,30 @@ export function uiCommand(program: Command): void {
             }
 
             if (issue.status !== 'closed') {
-              res.status(400).json({ error: 'Issue is not closed' });
+              res.status(400).json({error: 'Issue is not closed'});
               return;
             }
 
-            const { reason } = req.body;
+            const {reason} = req.body;
             const timestamp = new Date().toISOString();
 
             const event: ReopenEvent = {
               type: 'reopen',
               issueId,
               timestamp,
-              data: { reason },
+              data: {reason},
             };
 
             appendEventToFile(event, targetFile);
 
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
-              res.json(updated?.issue || { ...issue, status: 'open', updatedAt: timestamp });
+              res.json(updated?.issue || {...issue, status: 'open', updatedAt: timestamp});
             } else {
               res.json(getIssue(issueId));
             }
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -1012,7 +1004,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const found = findIssueInSources(req.params.id, issueFiles);
               if (!found) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = found.issue;
@@ -1023,7 +1015,7 @@ export function uiCommand(program: Command): void {
               issueId = resolveId(req.params.id);
               const localIssue = getIssue(issueId);
               if (!localIssue) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = localIssue;
@@ -1031,27 +1023,27 @@ export function uiCommand(program: Command): void {
             }
 
             if (issue.deleted) {
-              res.status(400).json({ error: 'Issue is already deleted' });
+              res.status(400).json({error: 'Issue is already deleted'});
               return;
             }
 
-            const { reason } = req.body;
+            const {reason} = req.body;
             const timestamp = new Date().toISOString();
             const state = getComputedState();
 
             // Collect all issues to delete (including cascaded)
-            const toDelete: Array<{ id: string; cascade: boolean }> = [];
+            const toDelete: Array<{id: string; cascade: boolean}> = [];
             const alreadyQueued = new Set<string>();
 
             // Add the main issue
-            toDelete.push({ id: issueId, cascade: false });
+            toDelete.push({id: issueId, cascade: false});
             alreadyQueued.add(issueId);
 
             // Get descendants for cascade delete
             const descendants = getDescendants(issueId, state);
             for (const desc of descendants) {
               if (!alreadyQueued.has(desc.id) && !desc.deleted) {
-                toDelete.push({ id: desc.id, cascade: true });
+                toDelete.push({id: desc.id, cascade: true});
                 alreadyQueued.add(desc.id);
               }
             }
@@ -1090,7 +1082,7 @@ export function uiCommand(program: Command): void {
             };
 
             // Delete all collected issues
-            for (const { id, cascade } of toDelete) {
+            for (const {id, cascade} of toDelete) {
               const iss = state.get(id);
               if (!iss) continue;
 
@@ -1113,7 +1105,7 @@ export function uiCommand(program: Command): void {
               deleted: toDelete,
             });
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -1127,7 +1119,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const found = findIssueInSources(req.params.id, issueFiles);
               if (!found) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = found.issue;
@@ -1138,7 +1130,7 @@ export function uiCommand(program: Command): void {
               issueId = resolveId(req.params.id);
               const localIssue = getIssue(issueId);
               if (!localIssue) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = localIssue;
@@ -1146,30 +1138,30 @@ export function uiCommand(program: Command): void {
             }
 
             if (!issue.deleted) {
-              res.status(400).json({ error: 'Issue is not deleted' });
+              res.status(400).json({error: 'Issue is not deleted'});
               return;
             }
 
-            const { reason } = req.body;
+            const {reason} = req.body;
             const timestamp = new Date().toISOString();
 
             const event: RestoreEvent = {
               type: 'restore',
               issueId,
               timestamp,
-              data: { reason },
+              data: {reason},
             };
 
             appendEventToFile(event, targetFile);
 
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
-              res.json(updated?.issue || { ...issue, deleted: false, deletedAt: undefined, updatedAt: timestamp });
+              res.json(updated?.issue || {...issue, deleted: false, deletedAt: undefined, updatedAt: timestamp});
             } else {
               res.json(getIssue(issueId));
             }
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -1183,7 +1175,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const found = findIssueInSources(req.params.id, issueFiles);
               if (!found) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = found.issue;
@@ -1194,17 +1186,17 @@ export function uiCommand(program: Command): void {
               issueId = resolveId(req.params.id);
               const localIssue = getIssue(issueId);
               if (!localIssue) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = localIssue;
               targetFile = path.join(pebbleDir, 'issues.jsonl');
             }
 
-            const { text, author } = req.body;
+            const {text, author} = req.body;
 
             if (!text || typeof text !== 'string' || text.trim() === '') {
-              res.status(400).json({ error: 'Comment text is required' });
+              res.status(400).json({error: 'Comment text is required'});
               return;
             }
 
@@ -1230,7 +1222,7 @@ export function uiCommand(program: Command): void {
               res.json(getIssue(issueId));
             }
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -1244,7 +1236,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const found = findIssueInSources(req.params.id, issueFiles);
               if (!found) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = found.issue;
@@ -1255,17 +1247,17 @@ export function uiCommand(program: Command): void {
               issueId = resolveId(req.params.id);
               const localIssue = getIssue(issueId);
               if (!localIssue) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = localIssue;
               targetFile = path.join(pebbleDir, 'issues.jsonl');
             }
 
-            const { blockerId } = req.body;
+            const {blockerId} = req.body;
 
             if (!blockerId) {
-              res.status(400).json({ error: 'blockerId is required' });
+              res.status(400).json({error: 'blockerId is required'});
               return;
             }
 
@@ -1274,7 +1266,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const blockerFound = findIssueInSources(blockerId, issueFiles);
               if (!blockerFound) {
-                res.status(404).json({ error: `Blocker issue not found: ${blockerId}` });
+                res.status(404).json({error: `Blocker issue not found: ${blockerId}`});
                 return;
               }
               resolvedBlockerId = blockerFound.issue.id;
@@ -1282,20 +1274,20 @@ export function uiCommand(program: Command): void {
               resolvedBlockerId = resolveId(blockerId);
               const blockerIssue = getIssue(resolvedBlockerId);
               if (!blockerIssue) {
-                res.status(404).json({ error: `Blocker issue not found: ${blockerId}` });
+                res.status(404).json({error: `Blocker issue not found: ${blockerId}`});
                 return;
               }
             }
 
             // Check if already a dependency
             if (issue.blockedBy.includes(resolvedBlockerId)) {
-              res.status(400).json({ error: 'Dependency already exists' });
+              res.status(400).json({error: 'Dependency already exists'});
               return;
             }
 
             // Check for cycles (only in single-file mode, cycle detection uses local state)
             if (!isMultiWorktree() && detectCycle(issueId, resolvedBlockerId)) {
-              res.status(400).json({ error: 'Adding this dependency would create a cycle' });
+              res.status(400).json({error: 'Adding this dependency would create a cycle'});
               return;
             }
 
@@ -1313,12 +1305,14 @@ export function uiCommand(program: Command): void {
 
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
-              res.json(updated?.issue || { ...issue, blockedBy: [...issue.blockedBy, resolvedBlockerId], updatedAt: timestamp });
+              res.json(
+                updated?.issue || {...issue, blockedBy: [...issue.blockedBy, resolvedBlockerId], updatedAt: timestamp}
+              );
             } else {
               res.json(getIssue(issueId));
             }
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 
@@ -1332,7 +1326,7 @@ export function uiCommand(program: Command): void {
             if (isMultiWorktree()) {
               const found = findIssueInSources(req.params.id, issueFiles);
               if (!found) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = found.issue;
@@ -1343,7 +1337,7 @@ export function uiCommand(program: Command): void {
               issueId = resolveId(req.params.id);
               const localIssue = getIssue(issueId);
               if (!localIssue) {
-                res.status(404).json({ error: `Issue not found: ${req.params.id}` });
+                res.status(404).json({error: `Issue not found: ${req.params.id}`});
                 return;
               }
               issue = localIssue;
@@ -1365,7 +1359,7 @@ export function uiCommand(program: Command): void {
             }
 
             if (!issue.blockedBy.includes(resolvedBlockerId)) {
-              res.status(400).json({ error: 'Dependency does not exist' });
+              res.status(400).json({error: 'Dependency does not exist'});
               return;
             }
 
@@ -1384,12 +1378,12 @@ export function uiCommand(program: Command): void {
 
             if (isMultiWorktree()) {
               const updated = findIssueInSources(issueId, issueFiles);
-              res.json(updated?.issue || { ...issue, blockedBy: newBlockedBy, updatedAt: timestamp });
+              res.json(updated?.issue || {...issue, blockedBy: newBlockedBy, updatedAt: timestamp});
             } else {
               res.json(getIssue(issueId));
             }
           } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
+            res.status(500).json({error: (error as Error).message});
           }
         });
 

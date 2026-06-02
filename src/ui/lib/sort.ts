@@ -1,4 +1,4 @@
-import type { Issue } from '../../shared/types';
+import type {Issue} from '../../shared/types';
 
 /**
  * Sorts issues by their dependencies using topological sort.

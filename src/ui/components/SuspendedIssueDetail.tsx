@@ -1,8 +1,8 @@
-import type { RefObject } from 'react';
-import type { Issue } from '../../shared/types';
-import { useSuspenseIssues } from '../hooks/useIssues';
-import { IssueDetail } from './IssueDetail';
-import { IssueNotFound } from './IssueNotFound';
+import type {RefObject} from 'react';
+import type {Issue} from '../../shared/types';
+import {useSuspenseIssues} from '../hooks/useIssues';
+import {IssueDetail} from './IssueDetail';
+import {IssueNotFound} from './IssueNotFound';
 
 interface SuspendedIssueDetailProps {
   issueId: string;
@@ -19,7 +19,7 @@ export function SuspendedIssueDetail({
   onRefresh,
   commentInputRef,
 }: SuspendedIssueDetailProps) {
-  const { issues, events, refresh } = useSuspenseIssues();
+  const {issues, events, refresh} = useSuspenseIssues();
   const issue = issues.find((candidate) => candidate.id === issueId);
 
   if (!issue) {

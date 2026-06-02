@@ -1,9 +1,9 @@
-import { Command } from 'commander';
+import {Command} from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
-import { readEventsFromFile } from '../lib/storage.js';
-import { computeState } from '../lib/state.js';
-import type { Issue, IssueEvent } from '../../shared/types.js';
+import {readEventsFromFile} from '../lib/storage.js';
+import {computeState} from '../lib/state.js';
+import type {Issue, IssueEvent} from '../../shared/types.js';
 
 interface MergedIssue extends Issue {
   _sources: string[];
@@ -39,7 +39,7 @@ function mergeEvents(filePaths: string[]): IssueEvent[] {
  * Same ID = same issue: keep the version with the latest updatedAt.
  */
 function mergeIssues(filePaths: string[]): MergedIssue[] {
-  const merged = new Map<string, { issue: Issue; sources: Set<string> }>();
+  const merged = new Map<string, {issue: Issue; sources: Set<string>}>();
 
   for (const filePath of filePaths) {
     const events = readEventsFromFile(filePath);
@@ -48,17 +48,17 @@ function mergeIssues(filePaths: string[]): MergedIssue[] {
     for (const [id, issue] of state) {
       const existing = merged.get(id);
       if (!existing) {
-        merged.set(id, { issue, sources: new Set([filePath]) });
+        merged.set(id, {issue, sources: new Set([filePath])});
       } else {
         existing.sources.add(filePath);
         if (new Date(issue.updatedAt) > new Date(existing.issue.updatedAt)) {
-          merged.set(id, { issue, sources: existing.sources });
+          merged.set(id, {issue, sources: existing.sources});
         }
       }
     }
   }
 
-  return Array.from(merged.values()).map(({ issue, sources }) => ({
+  return Array.from(merged.values()).map(({issue, sources}) => ({
     ...issue,
     _sources: Array.from(sources),
   }));
@@ -98,13 +98,9 @@ export function mergeCommand(program: Command): void {
           const issues = mergeIssues(filePaths);
 
           // Remove _sources unless requested
-          const outputIssues = options.showSources
-            ? issues
-            : issues.map(({ _sources, ...issue }) => issue);
+          const outputIssues = options.showSources ? issues : issues.map(({_sources, ...issue}) => issue);
 
-          output = pretty
-            ? JSON.stringify(outputIssues, null, 2)
-            : JSON.stringify(outputIssues);
+          output = pretty ? JSON.stringify(outputIssues, null, 2) : JSON.stringify(outputIssues);
         } else {
           // Default: output merged events as JSONL (preserves history)
           const events = mergeEvents(filePaths);

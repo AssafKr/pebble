@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDown, Search, Check, Bug, Circle, Diamond } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import type { Issue, Status, IssueType } from '../../../shared/types';
+import {useState, useRef, useEffect, useMemo} from 'react';
+import {ChevronDown, Search, Check, Bug, Circle, Diamond} from 'lucide-react';
+import {cn} from '../../lib/utils';
+import type {Issue, Status, IssueType} from '../../../shared/types';
 
 interface IssueSelectorProps {
   issues: Issue[];
@@ -50,9 +50,7 @@ export function IssueSelector({
   // Filter out excluded issues and closed issues
   const availableIssues = useMemo(() => {
     const excludeSet = new Set(excludeIds);
-    return issues.filter(
-      (issue) => issue.status !== 'closed' && !excludeSet.has(issue.id)
-    );
+    return issues.filter((issue) => issue.status !== 'closed' && !excludeSet.has(issue.id));
   }, [issues, excludeIds]);
 
   // Filter based on search
@@ -60,16 +58,12 @@ export function IssueSelector({
     if (!search.trim()) return availableIssues;
     const term = search.toLowerCase();
     return availableIssues.filter(
-      (issue) =>
-        issue.title.toLowerCase().includes(term) ||
-        issue.id.toLowerCase().includes(term)
+      (issue) => issue.title.toLowerCase().includes(term) || issue.id.toLowerCase().includes(term)
     );
   }, [availableIssues, search]);
 
   // Selected issue
-  const selectedIssue = value
-    ? issues.find((i) => i.id === value)
-    : null;
+  const selectedIssue = value ? issues.find((i) => i.id === value) : null;
 
   // Reset highlight when list changes
   useEffect(() => {
@@ -97,9 +91,7 @@ export function IssueSelector({
         if (!open) {
           setOpen(true);
         } else {
-          setHighlightedIndex((prev) =>
-            prev < filteredIssues.length - 1 ? prev + 1 : prev
-          );
+          setHighlightedIndex((prev) => (prev < filteredIssues.length - 1 ? prev + 1 : prev));
         }
         break;
       case 'ArrowUp':
@@ -130,7 +122,7 @@ export function IssueSelector({
       const items = listRef.current.querySelectorAll('[data-item]');
       const item = items[highlightedIndex];
       if (item) {
-        item.scrollIntoView({ block: 'nearest' });
+        item.scrollIntoView({block: 'nearest'});
       }
     }
   }, [highlightedIndex]);
@@ -158,15 +150,9 @@ export function IssueSelector({
         <span className={cn('truncate', !selectedIssue && 'text-muted-foreground')}>
           {selectedIssue ? (
             <span className="flex items-center gap-2">
-              <span className="text-muted-foreground">
-                {getTypeIcon(selectedIssue.type)}
-              </span>
-              <span
-                className={cn('h-2 w-2 rounded-full', getStatusColor(selectedIssue.status))}
-              />
-              <span className="font-mono text-xs text-muted-foreground">
-                {selectedIssue.id}
-              </span>
+              <span className="text-muted-foreground">{getTypeIcon(selectedIssue.type)}</span>
+              <span className={cn('h-2 w-2 rounded-full', getStatusColor(selectedIssue.status))} />
+              <span className="font-mono text-xs text-muted-foreground">{selectedIssue.id}</span>
               <span className="truncate">{selectedIssue.title}</span>
             </span>
           ) : (
@@ -174,10 +160,7 @@ export function IssueSelector({
           )}
         </span>
         <ChevronDown
-          className={cn(
-            'h-4 w-4 text-muted-foreground transition-transform flex-shrink-0',
-            open && 'rotate-180'
-          )}
+          className={cn('h-4 w-4 text-muted-foreground transition-transform flex-shrink-0', open && 'rotate-180')}
         />
       </button>
 
@@ -201,9 +184,7 @@ export function IssueSelector({
           <div ref={listRef} className="max-h-60 overflow-y-auto py-1">
             {filteredIssues.length === 0 ? (
               <div className="px-3 py-2 text-sm text-muted-foreground">
-                {availableIssues.length === 0
-                  ? 'No available issues'
-                  : 'No issues match your search'}
+                {availableIssues.length === 0 ? 'No available issues' : 'No issues match your search'}
               </div>
             ) : (
               filteredIssues.map((issue, index) => {
@@ -222,22 +203,13 @@ export function IssueSelector({
                     )}
                   >
                     {/* Type icon */}
-                    <span className="mr-2 text-muted-foreground">
-                      {getTypeIcon(issue.type)}
-                    </span>
+                    <span className="mr-2 text-muted-foreground">{getTypeIcon(issue.type)}</span>
 
                     {/* Status dot */}
-                    <span
-                      className={cn(
-                        'mr-2 h-2 w-2 flex-shrink-0 rounded-full',
-                        getStatusColor(issue.status)
-                      )}
-                    />
+                    <span className={cn('mr-2 h-2 w-2 flex-shrink-0 rounded-full', getStatusColor(issue.status))} />
 
                     {/* ID */}
-                    <span className="mr-2 font-mono text-xs text-muted-foreground">
-                      {issue.id}
-                    </span>
+                    <span className="mr-2 font-mono text-xs text-muted-foreground">{issue.id}</span>
 
                     {/* Title */}
                     <span className="truncate">{issue.title}</span>

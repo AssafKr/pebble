@@ -10,30 +10,30 @@
        =========================================== */
 
     /* Backgrounds */
-    --background: 40 33% 98%;           /* #FDFBF7 - Warm cream */
-    --background-subtle: 38 25% 95%;    /* #F7F4EE - Darker cream */
-    --surface: 0 0% 100%;               /* #FFFFFF - Pure white for cards */
-    --surface-raised: 0 0% 100%;        /* #FFFFFF - Elevated surfaces */
+    --background: 40 33% 98%; /* #FDFBF7 - Warm cream */
+    --background-subtle: 38 25% 95%; /* #F7F4EE - Darker cream */
+    --surface: 0 0% 100%; /* #FFFFFF - Pure white for cards */
+    --surface-raised: 0 0% 100%; /* #FFFFFF - Elevated surfaces */
 
     /* Foreground */
-    --foreground: 192 14% 20%;          /* #2D3436 - Soft black */
-    --foreground-muted: 195 8% 41%;     /* #636E72 - Secondary text */
-    --foreground-subtle: 198 13% 73%;   /* #B2BEC3 - Placeholder */
+    --foreground: 192 14% 20%; /* #2D3436 - Soft black */
+    --foreground-muted: 195 8% 41%; /* #636E72 - Secondary text */
+    --foreground-subtle: 198 13% 73%; /* #B2BEC3 - Placeholder */
 
     /* Primary: Sage Green */
-    --primary: 141 13% 54%;             /* #7C9885 - Muted sage */
-    --primary-hover: 141 14% 47%;       /* #6B8574 - Darker sage */
-    --primary-soft: 138 25% 92%;        /* #E8F0EA - Soft sage bg */
-    --primary-foreground: 0 0% 100%;    /* White text on primary */
+    --primary: 141 13% 54%; /* #7C9885 - Muted sage */
+    --primary-hover: 141 14% 47%; /* #6B8574 - Darker sage */
+    --primary-soft: 138 25% 92%; /* #E8F0EA - Soft sage bg */
+    --primary-foreground: 0 0% 100%; /* White text on primary */
 
     /* Secondary */
-    --secondary: 38 25% 95%;            /* Same as background-subtle */
+    --secondary: 38 25% 95%; /* Same as background-subtle */
     --secondary-foreground: 192 14% 20%;
 
     /* Accent: Terracotta */
-    --accent: 18 36% 59%;               /* #C1836A - Warm terracotta */
-    --accent-hover: 18 37% 52%;         /* #B07259 - Darker terracotta */
-    --accent-soft: 20 36% 93%;          /* #F5EBE6 - Soft terracotta bg */
+    --accent: 18 36% 59%; /* #C1836A - Warm terracotta */
+    --accent-hover: 18 37% 52%; /* #B07259 - Darker terracotta */
+    --accent-soft: 20 36% 93%; /* #F5EBE6 - Soft terracotta bg */
     --accent-foreground: 0 0% 100%;
 
     /* Muted */
@@ -41,25 +41,25 @@
     --muted-foreground: 195 8% 41%;
 
     /* Destructive */
-    --destructive: 4 55% 62%;           /* #D4847C - Muted coral */
+    --destructive: 4 55% 62%; /* #D4847C - Muted coral */
     --destructive-foreground: 0 0% 100%;
 
     /* Status Colors (softened) */
-    --status-open: 38 73% 68%;          /* #E9B872 - Warm honey */
-    --status-progress: 209 41% 63%;     /* #7BA3C9 - Soft sky */
-    --status-blocked: 4 55% 66%;        /* #D4847C - Muted coral */
-    --status-closed: 141 13% 54%;       /* #7C9885 - Sage (matches primary) */
+    --status-open: 38 73% 68%; /* #E9B872 - Warm honey */
+    --status-progress: 209 41% 63%; /* #7BA3C9 - Soft sky */
+    --status-blocked: 4 55% 66%; /* #D4847C - Muted coral */
+    --status-closed: 141 13% 54%; /* #7C9885 - Sage (matches primary) */
 
     /* Type Colors (softened) */
-    --type-epic: 257 28% 60%;           /* #8B7BB5 - Soft purple */
-    --type-bug: 0 35% 67%;              /* #C98B8B - Dusty rose */
-    --type-task: 212 14% 60%;           /* #8B9BA8 - Slate blue */
+    --type-epic: 257 28% 60%; /* #8B7BB5 - Soft purple */
+    --type-bug: 0 35% 67%; /* #C98B8B - Dusty rose */
+    --type-task: 212 14% 60%; /* #8B9BA8 - Slate blue */
 
     /* Borders & Dividers */
-    --border: 38 18% 89%;               /* #E8E4DD - Warm gray */
-    --border-subtle: 38 20% 93%;        /* #F0ECE5 - Very subtle */
+    --border: 38 18% 89%; /* #E8E4DD - Warm gray */
+    --border-subtle: 38 20% 93%; /* #F0ECE5 - Very subtle */
     --input: 38 18% 89%;
-    --ring: 141 13% 54%;                /* Sage green for focus */
+    --ring: 141 13% 54%; /* Sage green for focus */
 
     /* Border Radius */
     --radius: 0.5rem;
@@ -87,17 +87,17 @@
     --popover-foreground: 192 14% 20%;
 
     /* Graph colors */
-    --graph-bg: #FDFBF7;
-    --graph-grid: #E8E4DD;
-    --graph-node-bg: #FFFFFF;
-    --graph-node-border: #E8E4DD;
-    --graph-edge-blocked: #D4847C;
-    --graph-edge-resolved: #7C9885;
-    --graph-edge-parent: #7BA3C9;
-    --graph-status-open: #E9B872;
-    --graph-status-in-progress: #7BA3C9;
-    --graph-status-blocked: #D4847C;
-    --graph-status-closed: #7C9885;
+    --graph-bg: #fdfbf7;
+    --graph-grid: #e8e4dd;
+    --graph-node-bg: #ffffff;
+    --graph-node-border: #e8e4dd;
+    --graph-edge-blocked: #d4847c;
+    --graph-edge-resolved: #7c9885;
+    --graph-edge-parent: #7ba3c9;
+    --graph-status-open: #e9b872;
+    --graph-status-in-progress: #7ba3c9;
+    --graph-status-blocked: #d4847c;
+    --graph-status-closed: #7c9885;
   }
 
   .dark {
@@ -107,30 +107,30 @@
        =========================================== */
 
     /* Backgrounds */
-    --background: 195 10% 11%;          /* #1A1D1E - Deep charcoal */
-    --background-subtle: 195 8% 15%;    /* #232729 - Slightly lighter */
-    --surface: 195 7% 18%;              /* #2A2E30 - Card background */
-    --surface-raised: 195 6% 21%;       /* #323739 - Elevated */
+    --background: 195 10% 11%; /* #1A1D1E - Deep charcoal */
+    --background-subtle: 195 8% 15%; /* #232729 - Slightly lighter */
+    --surface: 195 7% 18%; /* #2A2E30 - Card background */
+    --surface-raised: 195 6% 21%; /* #323739 - Elevated */
 
     /* Foreground */
-    --foreground: 38 18% 89%;           /* #E8E4DD - Warm off-white */
-    --foreground-muted: 200 5% 63%;     /* #9CA3A8 - Muted text */
-    --foreground-subtle: 195 6% 39%;    /* #5C6468 - Subtle text */
+    --foreground: 38 18% 89%; /* #E8E4DD - Warm off-white */
+    --foreground-muted: 200 5% 63%; /* #9CA3A8 - Muted text */
+    --foreground-subtle: 195 6% 39%; /* #5C6468 - Subtle text */
 
     /* Primary: Sage Green (brightened) */
-    --primary: 141 18% 66%;             /* #9BB5A3 - Lighter sage */
-    --primary-hover: 141 22% 73%;       /* #AECAB7 - Even lighter */
-    --primary-soft: 150 15% 19%;        /* #2A3530 - Dark sage bg */
-    --primary-foreground: 195 10% 11%;  /* Dark text on primary */
+    --primary: 141 18% 66%; /* #9BB5A3 - Lighter sage */
+    --primary-hover: 141 22% 73%; /* #AECAB7 - Even lighter */
+    --primary-soft: 150 15% 19%; /* #2A3530 - Dark sage bg */
+    --primary-foreground: 195 10% 11%; /* Dark text on primary */
 
     /* Secondary */
     --secondary: 195 8% 15%;
     --secondary-foreground: 38 18% 89%;
 
     /* Accent: Terracotta (brightened) */
-    --accent: 20 45% 70%;               /* #D9A08A - Lighter terracotta */
-    --accent-hover: 20 50% 77%;         /* #E5B9A5 - Even lighter */
-    --accent-soft: 20 15% 19%;          /* #352E2A - Dark terracotta bg */
+    --accent: 20 45% 70%; /* #D9A08A - Lighter terracotta */
+    --accent-hover: 20 50% 77%; /* #E5B9A5 - Even lighter */
+    --accent-soft: 20 15% 19%; /* #352E2A - Dark terracotta bg */
     --accent-foreground: 195 10% 11%;
 
     /* Muted */
@@ -138,23 +138,23 @@
     --muted-foreground: 200 5% 63%;
 
     /* Destructive */
-    --destructive: 4 60% 72%;           /* #E5A099 - Brighter coral */
+    --destructive: 4 60% 72%; /* #E5A099 - Brighter coral */
     --destructive-foreground: 195 10% 11%;
 
     /* Status Colors (brightened for dark) */
-    --status-open: 42 78% 72%;          /* #F0C87E - Brighter honey */
-    --status-progress: 209 52% 70%;     /* #8FBAD9 - Brighter sky */
-    --status-blocked: 4 60% 76%;        /* #E5A099 - Brighter coral */
-    --status-closed: 141 18% 66%;       /* #9BB5A3 - Brighter sage */
+    --status-open: 42 78% 72%; /* #F0C87E - Brighter honey */
+    --status-progress: 209 52% 70%; /* #8FBAD9 - Brighter sky */
+    --status-blocked: 4 60% 76%; /* #E5A099 - Brighter coral */
+    --status-closed: 141 18% 66%; /* #9BB5A3 - Brighter sage */
 
     /* Type Colors (brightened) */
-    --type-epic: 257 35% 70%;           /* #A899CC - Brighter purple */
-    --type-bug: 0 35% 75%;              /* #D9A8A8 - Brighter rose */
-    --type-task: 212 22% 70%;           /* #A3B3C2 - Brighter slate */
+    --type-epic: 257 35% 70%; /* #A899CC - Brighter purple */
+    --type-bug: 0 35% 75%; /* #D9A8A8 - Brighter rose */
+    --type-task: 212 22% 70%; /* #A3B3C2 - Brighter slate */
 
     /* Borders */
-    --border: 195 6% 25%;               /* #3A3F42 - Warm dark border */
-    --border-subtle: 195 6% 20%;        /* #2F3336 - Very subtle */
+    --border: 195 6% 25%; /* #3A3F42 - Warm dark border */
+    --border-subtle: 195 6% 20%; /* #2F3336 - Very subtle */
     --input: 195 6% 25%;
     --ring: 141 18% 66%;
 
@@ -170,17 +170,17 @@
     --popover-foreground: 38 18% 89%;
 
     /* Graph colors - dark mode */
-    --graph-bg: #1A1D1E;
-    --graph-grid: #3A3F42;
-    --graph-node-bg: #2A2E30;
-    --graph-node-border: #3A3F42;
-    --graph-edge-blocked: #E5A099;
-    --graph-edge-resolved: #9BB5A3;
-    --graph-edge-parent: #8FBAD9;
-    --graph-status-open: #F0C87E;
-    --graph-status-in-progress: #8FBAD9;
-    --graph-status-blocked: #E5A099;
-    --graph-status-closed: #9BB5A3;
+    --graph-bg: #1a1d1e;
+    --graph-grid: #3a3f42;
+    --graph-node-bg: #2a2e30;
+    --graph-node-border: #3a3f42;
+    --graph-edge-blocked: #e5a099;
+    --graph-edge-resolved: #9bb5a3;
+    --graph-edge-parent: #8fbad9;
+    --graph-status-open: #f0c87e;
+    --graph-status-in-progress: #8fbad9;
+    --graph-status-blocked: #e5a099;
+    --graph-status-closed: #9bb5a3;
   }
 }
 
@@ -258,7 +258,8 @@
   }
 
   @keyframes pulse-soft {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {

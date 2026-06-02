@@ -1,4 +1,4 @@
-import { formatDistanceToNow, parseISO } from 'date-fns';
+import {formatDistanceToNow, parseISO} from 'date-fns';
 
 /**
  * Formats an ISO timestamp as a relative time string.
@@ -8,7 +8,7 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 export function formatRelativeTime(isoString: string): string {
   try {
     const date = parseISO(isoString);
-    return formatDistanceToNow(date, { addSuffix: true });
+    return formatDistanceToNow(date, {addSuffix: true});
   } catch {
     return isoString; // Fallback to original if parsing fails
   }
@@ -26,7 +26,7 @@ export function formatTimestamp(isoString: string): {
   try {
     const date = parseISO(isoString);
     return {
-      relative: formatDistanceToNow(date, { addSuffix: true }),
+      relative: formatDistanceToNow(date, {addSuffix: true}),
       absolute: date.toLocaleString(),
     };
   } catch {

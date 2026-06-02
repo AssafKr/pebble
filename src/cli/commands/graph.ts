@@ -1,8 +1,8 @@
-import { Command } from 'commander';
-import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getIssue, getIssues, resolveId } from '../lib/state.js';
-import { outputError, formatJson } from '../lib/output.js';
-import type { Issue } from '../../shared/types.js';
+import {Command} from 'commander';
+import {getOrCreatePebbleDir} from '../lib/storage.js';
+import {getIssue, getIssues, resolveId} from '../lib/state.js';
+import {outputError, formatJson} from '../lib/output.js';
+import type {Issue} from '../../shared/types.js';
 
 export function graphCommand(program: Command): void {
   program
@@ -33,14 +33,16 @@ export function graphCommand(program: Command): void {
         if (pretty) {
           console.log(formatGraphPretty(issues));
         } else {
-          console.log(formatJson({
-            nodes: issues.map((i) => ({
-              id: i.id,
-              title: i.title,
-              status: i.status,
-              blockedBy: i.blockedBy,
-            })),
-          }));
+          console.log(
+            formatJson({
+              nodes: issues.map((i) => ({
+                id: i.id,
+                title: i.title,
+                status: i.status,
+                blockedBy: i.blockedBy,
+              })),
+            })
+          );
         }
       } catch (error) {
         outputError(error as Error, pretty);

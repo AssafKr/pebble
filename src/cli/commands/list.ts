@@ -1,9 +1,16 @@
-import { Command } from 'commander';
-import type { IssueType, Priority, Status, IssueFilters } from '../../shared/types.js';
-import { ISSUE_TYPES, PRIORITIES, STATUSES, STATUS_LABELS } from '../../shared/types.js';
-import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getIssues, resolveId, getBlocking, getChildren, getComputedState, getAncestryChain } from '../lib/state.js';
-import { outputIssueList, outputIssueListVerbose, outputIssueTree, outputError, type VerboseIssueInfo, type LimitInfo } from '../lib/output.js';
+import {Command} from 'commander';
+import type {IssueType, Priority, Status, IssueFilters} from '../../shared/types.js';
+import {ISSUE_TYPES, PRIORITIES, STATUSES, STATUS_LABELS} from '../../shared/types.js';
+import {getOrCreatePebbleDir} from '../lib/storage.js';
+import {getIssues, resolveId, getBlocking, getChildren, getComputedState, getAncestryChain} from '../lib/state.js';
+import {
+  outputIssueList,
+  outputIssueListVerbose,
+  outputIssueTree,
+  outputError,
+  type VerboseIssueInfo,
+  type LimitInfo,
+} from '../lib/output.js';
 
 export function listCommand(program: Command): void {
   program
@@ -61,7 +68,7 @@ export function listCommand(program: Command): void {
 
         // Apply limit
         const total = issues.length;
-        const limit = options.all ? 0 : (options.limit ? parseInt(options.limit, 10) : 30);
+        const limit = options.all ? 0 : options.limit ? parseInt(options.limit, 10) : 30;
         if (limit > 0 && issues.length > limit) {
           issues = issues.slice(0, limit);
         }

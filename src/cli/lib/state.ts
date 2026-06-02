@@ -1,12 +1,5 @@
-import type {
-  Issue,
-  IssueEvent,
-  CreateEvent,
-  UpdateEvent,
-  CommentEvent,
-  IssueFilters,
-} from '../../shared/types.js';
-import { readEvents, appendEvent } from './storage.js';
+import type {Issue, IssueEvent, CreateEvent, UpdateEvent, CommentEvent, IssueFilters} from '../../shared/types.js';
+import {readEvents, appendEvent} from './storage.js';
 
 /**
  * Compute current issue state from a list of events
@@ -203,18 +196,14 @@ export function resolveId(partial: string): string {
   }
 
   // Then try prefix match
-  const prefixMatches = allIds.filter((id) =>
-    id.toLowerCase().startsWith(partialLower)
-  );
+  const prefixMatches = allIds.filter((id) => id.toLowerCase().startsWith(partialLower));
 
   if (prefixMatches.length === 1) {
     return prefixMatches[0];
   }
 
   if (prefixMatches.length > 1) {
-    throw new Error(
-      `Ambiguous issue ID '${partial}'. Matches: ${prefixMatches.join(', ')}`
-    );
+    throw new Error(`Ambiguous issue ID '${partial}'. Matches: ${prefixMatches.join(', ')}`);
   }
 
   // Then try suffix match (part after the hyphen)
@@ -230,9 +219,7 @@ export function resolveId(partial: string): string {
   }
 
   if (suffixMatches.length > 1) {
-    throw new Error(
-      `Ambiguous issue ID '${partial}'. Matches: ${suffixMatches.join(', ')}`
-    );
+    throw new Error(`Ambiguous issue ID '${partial}'. Matches: ${suffixMatches.join(', ')}`);
   }
 
   throw new Error(`Issue not found: ${partial}`);
@@ -384,9 +371,7 @@ export function getBlockers(issueId: string): Issue[] {
   const events = readEvents();
   const state = computeState(events);
 
-  return issue.blockedBy
-    .map((id) => state.get(id))
-    .filter((i): i is Issue => i !== undefined);
+  return issue.blockedBy.map((id) => state.get(id)).filter((i): i is Issue => i !== undefined);
 }
 
 /**
@@ -396,9 +381,7 @@ export function getBlocking(issueId: string): Issue[] {
   const events = readEvents();
   const state = computeState(events);
 
-  return Array.from(state.values()).filter((issue) =>
-    issue.blockedBy.includes(issueId)
-  );
+  return Array.from(state.values()).filter((issue) => issue.blockedBy.includes(issueId));
 }
 
 /**
@@ -408,9 +391,7 @@ export function getChildren(epicId: string, includeDeleted = false): Issue[] {
   const events = readEvents();
   const state = computeState(events);
 
-  return Array.from(state.values()).filter((issue) =>
-    issue.parent === epicId && (includeDeleted || !issue.deleted)
-  );
+  return Array.from(state.values()).filter((issue) => issue.parent === epicId && (includeDeleted || !issue.deleted));
 }
 
 /**
@@ -462,9 +443,7 @@ export function getRelated(issueId: string): Issue[] {
   const events = readEvents();
   const state = computeState(events);
 
-  return issue.relatedTo
-    .map((id) => state.get(id))
-    .filter((i): i is Issue => i !== undefined);
+  return issue.relatedTo.map((id) => state.get(id)).filter((i): i is Issue => i !== undefined);
 }
 
 /**
@@ -497,9 +476,7 @@ export function getOpenBlockers(issueId: string): Issue[] {
   const events = readEvents();
   const state = computeState(events);
 
-  return issue.blockedBy
-    .map((id) => state.get(id))
-    .filter((i): i is Issue => i !== undefined && i.status !== 'closed');
+  return issue.blockedBy.map((id) => state.get(id)).filter((i): i is Issue => i !== undefined && i.status !== 'closed');
 }
 
 /**
@@ -515,17 +492,14 @@ export function getComputedState(): Map<string, Issue> {
  * Get the ancestry chain for an issue (parent → grandparent → great-grandparent...)
  * Returns array ordered from immediate parent to root
  */
-export function getAncestryChain(
-  issueId: string,
-  state: Map<string, Issue>
-): Array<{ id: string; title: string }> {
-  const chain: Array<{ id: string; title: string }> = [];
+export function getAncestryChain(issueId: string, state: Map<string, Issue>): Array<{id: string; title: string}> {
+  const chain: Array<{id: string; title: string}> = [];
   let current = state.get(issueId);
 
   while (current?.parent) {
     const parent = state.get(current.parent);
     if (!parent) break;
-    chain.push({ id: parent.id, title: parent.title });
+    chain.push({id: parent.id, title: parent.title});
     current = parent;
   }
 
@@ -539,7 +513,7 @@ export function getAncestryChain(
 export function getAncestryBlocker(
   issueId: string,
   state: Map<string, Issue>
-): { blockedAncestor: Issue; blockers: Issue[] } | null {
+): {blockedAncestor: Issue; blockers: Issue[]} | null {
   let current = state.get(issueId);
 
   while (current?.parent) {
@@ -552,7 +526,7 @@ export function getAncestryBlocker(
       .filter((i): i is Issue => i !== undefined && i.status !== 'closed' && !i.deleted);
 
     if (openBlockers.length > 0) {
-      return { blockedAncestor: parent, blockers: openBlockers };
+      return {blockedAncestor: parent, blockers: openBlockers};
     }
 
     current = parent;
@@ -561,35 +535,30 @@ export function getAncestryBlocker(
   return null;
 }
 
-export type ClaimResult =
-  | { success: true; claimedIds: string[] }
-  | { success: false; error: string };
+export type ClaimResult = {success: true; claimedIds: string[]} | {success: false; error: string};
 
 /**
  * Claim an issue and cascade to all open parents
  * Validates that neither the issue nor any ancestor is blocked
  */
-export function claimWithCascade(
-  issueId: string,
-  pebbleDir: string
-): ClaimResult {
+export function claimWithCascade(issueId: string, pebbleDir: string): ClaimResult {
   const events = readEvents();
   const state = computeState(events);
   const issue = state.get(issueId);
 
   // Validate issue exists
   if (!issue) {
-    return { success: false, error: `Issue not found: ${issueId}` };
+    return {success: false, error: `Issue not found: ${issueId}`};
   }
 
   // Validate not deleted
   if (issue.deleted) {
-    return { success: false, error: `Cannot claim deleted issue: ${issueId}` };
+    return {success: false, error: `Cannot claim deleted issue: ${issueId}`};
   }
 
   // Validate not closed
   if (issue.status === 'closed') {
-    return { success: false, error: `Cannot claim closed issue: ${issueId}` };
+    return {success: false, error: `Cannot claim closed issue: ${issueId}`};
   }
 
   // Check if issue itself is blocked (exclude deleted blockers)
@@ -642,12 +611,12 @@ export function claimWithCascade(
       type: 'update',
       issueId: id,
       timestamp,
-      data: { status: 'in_progress' },
+      data: {status: 'in_progress'},
     };
     appendEvent(event, pebbleDir);
   }
 
-  return { success: true, claimedIds: toClaim };
+  return {success: true, claimedIds: toClaim};
 }
 
 /**
@@ -655,10 +624,7 @@ export function claimWithCascade(
  * Used for cascade delete of epics
  * Returns flat array of all descendant issues
  */
-export function getDescendants(
-  issueId: string,
-  state?: Map<string, Issue>
-): Issue[] {
+export function getDescendants(issueId: string, state?: Map<string, Issue>): Issue[] {
   const issueState = state ?? getComputedState();
   const descendants: Issue[] = [];
 

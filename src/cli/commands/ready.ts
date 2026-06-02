@@ -1,8 +1,14 @@
-import { Command } from 'commander';
-import { ISSUE_TYPES, type IssueType } from '../../shared/types.js';
-import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { getReady, getBlocking, getChildren, getComputedState, getAncestryChain } from '../lib/state.js';
-import { outputIssueList, outputIssueListVerbose, outputError, type VerboseIssueInfo, type LimitInfo } from '../lib/output.js';
+import {Command} from 'commander';
+import {ISSUE_TYPES, type IssueType} from '../../shared/types.js';
+import {getOrCreatePebbleDir} from '../lib/storage.js';
+import {getReady, getBlocking, getChildren, getComputedState, getAncestryChain} from '../lib/state.js';
+import {
+  outputIssueList,
+  outputIssueListVerbose,
+  outputError,
+  type VerboseIssueInfo,
+  type LimitInfo,
+} from '../lib/output.js';
 
 export function readyCommand(program: Command): void {
   program
@@ -35,7 +41,7 @@ export function readyCommand(program: Command): void {
 
         // Apply limit
         const total = issues.length;
-        const limit = options.all ? 0 : (options.limit ? parseInt(options.limit, 10) : 30);
+        const limit = options.all ? 0 : options.limit ? parseInt(options.limit, 10) : 30;
         if (limit > 0 && issues.length > limit) {
           issues = issues.slice(0, limit);
         }

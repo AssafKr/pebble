@@ -1,7 +1,7 @@
-import { Command } from 'commander';
-import { getOrCreatePebbleDir } from '../lib/storage.js';
-import { resolveId, claimWithCascade } from '../lib/state.js';
-import { outputError, formatJson } from '../lib/output.js';
+import {Command} from 'commander';
+import {getOrCreatePebbleDir} from '../lib/storage.js';
+import {resolveId, claimWithCascade} from '../lib/state.js';
+import {outputError, formatJson} from '../lib/output.js';
 
 interface ClaimResultOutput {
   id: string;
@@ -21,7 +21,12 @@ export function claimCommand(program: Command): void {
         const pebbleDir = getOrCreatePebbleDir();
 
         // Support comma-separated IDs: "ID1,ID2,ID3" or "ID1 ID2 ID3"
-        const allIds = ids.flatMap(id => id.split(',').map(s => s.trim()).filter(Boolean));
+        const allIds = ids.flatMap((id) =>
+          id
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        );
 
         if (allIds.length === 0) {
           throw new Error('No issue IDs provided');
@@ -48,7 +53,7 @@ export function claimCommand(program: Command): void {
               });
             }
           } catch (error) {
-            results.push({ id, success: false, error: (error as Error).message });
+            results.push({id, success: false, error: (error as Error).message});
           }
         }
 
@@ -58,18 +63,20 @@ export function claimCommand(program: Command): void {
           const result = results[0];
           if (result.success) {
             if (pretty) {
-              const cascaded = result.claimedIds?.filter(cid => cid !== result.id) ?? [];
+              const cascaded = result.claimedIds?.filter((cid) => cid !== result.id) ?? [];
               if (cascaded.length > 0) {
                 console.log(`✓ ${result.id} (also claimed: ${cascaded.join(', ')})`);
               } else {
                 console.log(`✓ ${result.id}`);
               }
             } else {
-              console.log(formatJson({
-                id: result.id,
-                success: true,
-                claimedIds: result.claimedIds,
-              }));
+              console.log(
+                formatJson({
+                  id: result.id,
+                  success: true,
+                  claimedIds: result.claimedIds,
+                })
+              );
             }
           } else {
             throw new Error(result.error || 'Unknown error');
@@ -79,7 +86,7 @@ export function claimCommand(program: Command): void {
           if (pretty) {
             for (const result of results) {
               if (result.success) {
-                const cascaded = result.claimedIds?.filter(cid => cid !== result.id) ?? [];
+                const cascaded = result.claimedIds?.filter((cid) => cid !== result.id) ?? [];
                 if (cascaded.length > 0) {
                   console.log(`✓ ${result.id} (also claimed: ${cascaded.join(', ')})`);
                 } else {
@@ -90,12 +97,16 @@ export function claimCommand(program: Command): void {
               }
             }
           } else {
-            console.log(formatJson(results.map(r => ({
-              id: r.id,
-              success: r.success,
-              ...(r.claimedIds && { claimedIds: r.claimedIds }),
-              ...(r.error && { error: r.error }),
-            }))));
+            console.log(
+              formatJson(
+                results.map((r) => ({
+                  id: r.id,
+                  success: r.success,
+                  ...(r.claimedIds && {claimedIds: r.claimedIds}),
+                  ...(r.error && {error: r.error}),
+                }))
+              )
+            );
           }
         }
       } catch (error) {

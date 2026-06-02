@@ -1,13 +1,11 @@
-import { Command } from 'commander';
-import type { CommentEvent } from '../../shared/types.js';
-import { getOrCreatePebbleDir, appendEvent } from '../lib/storage.js';
-import { getIssue, resolveId } from '../lib/state.js';
-import { outputMutationSuccess, outputError } from '../lib/output.js';
+import {Command} from 'commander';
+import type {CommentEvent} from '../../shared/types.js';
+import {getOrCreatePebbleDir, appendEvent} from '../lib/storage.js';
+import {getIssue, resolveId} from '../lib/state.js';
+import {outputMutationSuccess, outputError} from '../lib/output.js';
 
 export function commentsCommand(program: Command): void {
-  const comments = program
-    .command('comments')
-    .description('Manage comments');
+  const comments = program.command('comments').description('Manage comments');
 
   // comments add <id> <text>
   comments

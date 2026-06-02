@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDown, Search, Check, X } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import type { Issue, Status } from '../../../shared/types';
+import {useState, useRef, useEffect, useMemo} from 'react';
+import {ChevronDown, Search, Check, X} from 'lucide-react';
+import {cn} from '../../lib/utils';
+import type {Issue, Status} from '../../../shared/types';
 
 interface HierarchicalSelectProps {
   epics: Issue[];
@@ -41,7 +41,7 @@ export function HierarchicalSelect({
   const listRef = useRef<HTMLDivElement>(null);
 
   // Build hierarchical structure
-  const { flatList, epicMap } = useMemo(() => {
+  const {flatList, epicMap} = useMemo(() => {
     const map = new Map(epics.map((e) => [e.id, e]));
 
     // Build tree structure
@@ -60,7 +60,7 @@ export function HierarchicalSelect({
     // Build flat list with depth
     function addNode(epic: Issue, depth: number) {
       const children = childrenMap.get(epic.id) || [];
-      nodes.push({ epic, children, depth });
+      nodes.push({epic, children, depth});
       for (const child of children) {
         addNode(child, depth + 1);
       }
@@ -72,7 +72,7 @@ export function HierarchicalSelect({
       addNode(epic, 0);
     }
 
-    return { flatList: nodes, epicMap: map };
+    return {flatList: nodes, epicMap: map};
   }, [epics]);
 
   // Filter based on search
@@ -80,9 +80,7 @@ export function HierarchicalSelect({
     if (!search.trim()) return flatList;
     const term = search.toLowerCase();
     return flatList.filter(
-      (node) =>
-        node.epic.title.toLowerCase().includes(term) ||
-        node.epic.id.toLowerCase().includes(term)
+      (node) => node.epic.title.toLowerCase().includes(term) || node.epic.id.toLowerCase().includes(term)
     );
   }, [flatList, search]);
 
@@ -115,9 +113,7 @@ export function HierarchicalSelect({
         if (!open) {
           setOpen(true);
         } else {
-          setHighlightedIndex((prev) =>
-            prev < filteredList.length - 1 ? prev + 1 : prev
-          );
+          setHighlightedIndex((prev) => (prev < filteredList.length - 1 ? prev + 1 : prev));
         }
         break;
       case 'ArrowUp':
@@ -148,7 +144,7 @@ export function HierarchicalSelect({
       const items = listRef.current.querySelectorAll('[data-item]');
       const item = items[highlightedIndex];
       if (item) {
-        item.scrollIntoView({ block: 'nearest' });
+        item.scrollIntoView({block: 'nearest'});
       }
     }
   }, [highlightedIndex]);
@@ -182,12 +178,8 @@ export function HierarchicalSelect({
         <span className={cn('truncate', !selectedEpic && 'text-muted-foreground')}>
           {selectedEpic ? (
             <span className="flex items-center gap-2">
-              <span
-                className={cn('h-2 w-2 rounded-full', getStatusColor(selectedEpic.status))}
-              />
-              <span className="font-mono text-xs text-muted-foreground">
-                {selectedEpic.id}
-              </span>
+              <span className={cn('h-2 w-2 rounded-full', getStatusColor(selectedEpic.status))} />
+              <span className="font-mono text-xs text-muted-foreground">{selectedEpic.id}</span>
               <span className="truncate">{selectedEpic.title}</span>
             </span>
           ) : (
@@ -196,20 +188,11 @@ export function HierarchicalSelect({
         </span>
         <span className="flex items-center gap-1">
           {selectedEpic && (
-            <span
-              role="button"
-              onClick={handleClear}
-              className="p-0.5 hover:bg-muted rounded"
-            >
+            <span role="button" onClick={handleClear} className="p-0.5 hover:bg-muted rounded">
               <X className="h-3 w-3 text-muted-foreground" />
             </span>
           )}
-          <ChevronDown
-            className={cn(
-              'h-4 w-4 text-muted-foreground transition-transform',
-              open && 'rotate-180'
-            )}
-          />
+          <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', open && 'rotate-180')} />
         </span>
       </button>
 
@@ -246,9 +229,7 @@ export function HierarchicalSelect({
             </div>
 
             {filteredList.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-muted-foreground">
-                No issues found
-              </div>
+              <div className="px-3 py-2 text-sm text-muted-foreground">No issues found</div>
             ) : (
               filteredList.map((node, index) => {
                 const childCount = node.children.length;
@@ -265,30 +246,19 @@ export function HierarchicalSelect({
                       isHighlighted && 'bg-accent',
                       isSelected && 'font-medium'
                     )}
-                    style={{ paddingLeft: `${12 + node.depth * 16}px` }}
+                    style={{paddingLeft: `${12 + node.depth * 16}px`}}
                   >
                     {/* Status dot */}
-                    <span
-                      className={cn(
-                        'mr-2 h-2 w-2 flex-shrink-0 rounded-full',
-                        getStatusColor(node.epic.status)
-                      )}
-                    />
+                    <span className={cn('mr-2 h-2 w-2 flex-shrink-0 rounded-full', getStatusColor(node.epic.status))} />
 
                     {/* ID */}
-                    <span className="mr-2 font-mono text-xs text-muted-foreground">
-                      {node.epic.id}
-                    </span>
+                    <span className="mr-2 font-mono text-xs text-muted-foreground">{node.epic.id}</span>
 
                     {/* Title */}
                     <span className="truncate">{node.epic.title}</span>
 
                     {/* Child count */}
-                    {childCount > 0 && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        ({childCount})
-                      </span>
-                    )}
+                    {childCount > 0 && <span className="ml-2 text-xs text-muted-foreground">({childCount})</span>}
 
                     {/* Check mark if selected */}
                     {isSelected && <Check className="ml-auto h-4 w-4 flex-shrink-0" />}

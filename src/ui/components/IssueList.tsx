@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, {useState, useMemo} from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,30 +11,20 @@ import {
   type ColumnFiltersState,
   type ExpandedState,
 } from '@tanstack/react-table';
-import type { Issue, IssueEvent } from '../../shared/types';
-import {
-  STATUS_BADGE_VARIANTS,
-  PRIORITY_DISPLAY_LABELS,
-} from '../../shared/types';
-import { formatRelativeTime } from '../../shared/time';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './ui/table';
-import { Badge } from './ui/badge';
-import { Input } from './ui/input';
-import { Select } from './ui/select';
-import { Button } from './ui/button';
-import { ArrowUpDown, ChevronRight, ChevronDown, Folder, FolderOpen, Trash2, X } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { getCommonPrefix, getRelativePath } from '../lib/path';
+import type {Issue, IssueEvent} from '../../shared/types';
+import {STATUS_BADGE_VARIANTS, PRIORITY_DISPLAY_LABELS} from '../../shared/types';
+import {formatRelativeTime} from '../../shared/time';
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from './ui/table';
+import {Badge} from './ui/badge';
+import {Input} from './ui/input';
+import {Select} from './ui/select';
+import {Button} from './ui/button';
+import {ArrowUpDown, ChevronRight, ChevronDown, Folder, FolderOpen, Trash2, X} from 'lucide-react';
+import {cn} from '../lib/utils';
+import {getCommonPrefix, getRelativePath} from '../lib/path';
 
 export type FilterPreset = 'ready' | 'blocked' | 'in_progress' | 'all_open' | null;
-import { getStatusOrder } from '../lib/sort';
+import {getStatusOrder} from '../lib/sort';
 
 export interface IssueListProps {
   issues: Issue[];
@@ -108,7 +98,7 @@ function buildHierarchy(issues: Issue[]): IssueWithChildren[] {
     });
 
     // Recursively build children's children
-    const subRowsList = sortedChildren.map(child => buildIssueWithChildren(child));
+    const subRowsList = sortedChildren.map((child) => buildIssueWithChildren(child));
     const subRows = subRowsList.length > 0 ? subRowsList : undefined;
 
     return {
@@ -225,8 +215,8 @@ export function IssueList({
 
   // Internal state (used when props not provided)
   const [sortingInternal, setSortingInternal] = useState<SortingState>([
-    { id: 'status', desc: false }, // Status first: in_progress → open → blocked → closed
-    { id: 'updatedAt', desc: true } // Then by updatedAt: newest first
+    {id: 'status', desc: false}, // Status first: in_progress → open → blocked → closed
+    {id: 'updatedAt', desc: true}, // Then by updatedAt: newest first
   ]);
   const [columnFiltersInternal, setColumnFiltersInternal] = useState<ColumnFiltersState>([]);
   const [globalFilterInternal, setGlobalFilterInternal] = useState('');
@@ -252,10 +242,7 @@ export function IssueList({
   const setShowDeleted = onShowDeletedChange ?? setShowDeletedInternal;
 
   // Create lookup map for O(1) issue access
-  const issueMap = useMemo(
-    () => new Map(issues.map((i) => [i.id, i])),
-    [issues]
-  );
+  const issueMap = useMemo(() => new Map(issues.map((i) => [i.id, i])), [issues]);
 
   // Get latest event for each issue
   const latestEventMap = useMemo(() => {
@@ -300,17 +287,17 @@ export function IssueList({
     if (issue.type.toLowerCase().includes(lowerSearch)) return true;
     if (issue.status.toLowerCase().includes(lowerSearch)) return true;
     if (issue.description?.toLowerCase().includes(lowerSearch)) return true;
-    if (issue.comments.some(c => c.text.toLowerCase().includes(lowerSearch))) return true;
+    if (issue.comments.some((c) => c.text.toLowerCase().includes(lowerSearch))) return true;
     return false;
   };
 
   // Compute search-matched IDs and their ancestors (so children show under parents)
-  const { searchMatchedIds, ancestorIds } = useMemo(() => {
+  const {searchMatchedIds, ancestorIds} = useMemo(() => {
     const searchMatchedIds = new Set<string>();
     const ancestorIds = new Set<string>();
 
     if (!globalFilter) {
-      return { searchMatchedIds, ancestorIds };
+      return {searchMatchedIds, ancestorIds};
     }
 
     // Find all issues that match the search
@@ -329,7 +316,7 @@ export function IssueList({
       }
     }
 
-    return { searchMatchedIds, ancestorIds };
+    return {searchMatchedIds, ancestorIds};
   }, [issues, globalFilter, issueMap]);
 
   // Apply source and preset filtering BEFORE hierarchy (fixes preset reactivity)
@@ -343,9 +330,7 @@ export function IssueList({
 
     // Apply source filter
     if (sourceFilter) {
-      result = result.filter((issue) =>
-        issue._sources?.includes(sourceFilter)
-      );
+      result = result.filter((issue) => issue._sources?.includes(sourceFilter));
     }
 
     // Then apply preset filter
@@ -378,10 +363,7 @@ export function IssueList({
   }, [issues, activePreset, issueMap, sourceFilter, showDeleted, globalFilter, searchMatchedIds, ancestorIds]);
 
   // Build hierarchical data structure from filtered issues
-  const hierarchicalData = useMemo(
-    () => buildHierarchy(filteredIssues),
-    [filteredIssues]
-  );
+  const hierarchicalData = useMemo(() => buildHierarchy(filteredIssues), [filteredIssues]);
 
   // Get all visible issue IDs for "select all" functionality
   const visibleIssueIds = useMemo(() => issues.map((i) => i.id), [issues]);
@@ -414,7 +396,7 @@ export function IssueList({
             title="Select all issues"
           />
         ),
-        cell: ({ row }) => {
+        cell: ({row}) => {
           // Don't show checkbox for synthetic group rows
           if (row.original._isGroup) {
             return null;
@@ -437,7 +419,7 @@ export function IssueList({
       },
       {
         accessorKey: 'id',
-        header: ({ column }) => (
+        header: ({column}) => (
           <button
             className="flex items-center gap-1"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
@@ -446,7 +428,7 @@ export function IssueList({
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => {
+        cell: ({row}) => {
           const canExpand = row.getCanExpand();
           const depth = row.depth;
           const isGroup = row.original._isGroup;
@@ -463,11 +445,7 @@ export function IssueList({
                   }}
                   className="p-0.5 hover:bg-muted rounded mr-1"
                 >
-                  {row.getIsExpanded() ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
+                  {row.getIsExpanded() ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </button>
                 <FolderOpen className="h-4 w-4 mr-1.5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">{row.original.title}</span>
@@ -477,7 +455,7 @@ export function IssueList({
           }
 
           return (
-            <div style={{ paddingLeft: `${depth * 24}px` }}>
+            <div style={{paddingLeft: `${depth * 24}px`}}>
               {/* ID row */}
               <div className="flex items-center">
                 {canExpand ? (
@@ -488,11 +466,7 @@ export function IssueList({
                     }}
                     className="p-0.5 hover:bg-muted rounded mr-1"
                   >
-                    {row.getIsExpanded() ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
+                    {row.getIsExpanded() ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                   </button>
                 ) : depth > 0 ? (
                   <span className="w-5 mr-1 border-l-2 border-b-2 border-muted h-3 rounded-bl" />
@@ -505,7 +479,7 @@ export function IssueList({
               {lastSource && (
                 <div
                   className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5"
-                  style={{ paddingLeft: '20px' }}
+                  style={{paddingLeft: '20px'}}
                   title={`Last modified from: ${lastSource}`}
                 >
                   <Folder className="h-3 w-3 flex-shrink-0" />
@@ -518,7 +492,7 @@ export function IssueList({
       },
       {
         accessorKey: 'title',
-        header: ({ column }) => (
+        header: ({column}) => (
           <button
             className="flex items-center gap-1"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
@@ -527,19 +501,21 @@ export function IssueList({
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => {
+        cell: ({row}) => {
           // Don't show title content for synthetic group rows (shown in ID column)
           if (row.original._isGroup) {
             return null;
           }
           const blockerCount = countOpenBlockers(row.original, issueMap);
           // Count all descendants
-          const countDescendants = (subRows: IssueWithChildren[] | undefined): {
+          const countDescendants = (
+            subRows: IssueWithChildren[] | undefined
+          ): {
             total: number;
             closed: number;
           } => {
             if (!subRows || subRows.length === 0) {
-              return { total: 0, closed: 0 };
+              return {total: 0, closed: 0};
             }
             let total = 0;
             let closed = 0;
@@ -551,14 +527,14 @@ export function IssueList({
               total += grandchildren.total;
               closed += grandchildren.closed;
             }
-            return { total, closed };
+            return {total, closed};
           };
-          const { total: childCount, closed: closedCount } = countDescendants(row.original.subRows);
+          const {total: childCount, closed: closedCount} = countDescendants(row.original.subRows);
           const allDone = childCount > 0 && closedCount === childCount;
           const isDeleted = row.original.deleted;
           return (
-            <div className={cn("flex items-center gap-2", isDeleted && "opacity-60")}>
-              <span className={cn("font-medium", isDeleted && "line-through")}>{row.getValue('title')}</span>
+            <div className={cn('flex items-center gap-2', isDeleted && 'opacity-60')}>
+              <span className={cn('font-medium', isDeleted && 'line-through')}>{row.getValue('title')}</span>
               {isDeleted && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 flex items-center gap-1">
                   <Trash2 className="h-3 w-3" />
@@ -566,11 +542,13 @@ export function IssueList({
                 </span>
               )}
               {childCount > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded ${
-                  allDone
-                    ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
-                    : 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400'
-                }`}>
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded ${
+                    allDone
+                      ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
+                      : 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400'
+                  }`}
+                >
                   {closedCount}/{childCount} done
                 </span>
               )}
@@ -586,13 +564,15 @@ export function IssueList({
       {
         accessorKey: 'type',
         header: 'Type',
-        cell: ({ row }) => {
+        cell: ({row}) => {
           if (row.original._isGroup) return null;
           const type = row.getValue('type') as string;
           const colorClass =
-            type === 'epic' ? 'bg-indigo-500 text-white hover:bg-indigo-600' :
-            type === 'bug' ? 'bg-rose-500 text-white hover:bg-rose-600' :
-            'bg-slate-500 text-white hover:bg-slate-600'; // task
+            type === 'epic'
+              ? 'bg-indigo-500 text-white hover:bg-indigo-600'
+              : type === 'bug'
+              ? 'bg-rose-500 text-white hover:bg-rose-600'
+              : 'bg-slate-500 text-white hover:bg-slate-600'; // task
           return <Badge className={colorClass}>{type}</Badge>;
         },
         filterFn: (row, id, value) => {
@@ -601,7 +581,7 @@ export function IssueList({
       },
       {
         accessorKey: 'priority',
-        header: ({ column }) => (
+        header: ({column}) => (
           <button
             className="flex items-center gap-1"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
@@ -610,7 +590,7 @@ export function IssueList({
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => {
+        cell: ({row}) => {
           if (row.original._isGroup) return null;
           const priority = row.getValue('priority') as keyof typeof PRIORITY_DISPLAY_LABELS;
           return (
@@ -625,7 +605,7 @@ export function IssueList({
       },
       {
         accessorKey: 'status',
-        header: ({ column }) => (
+        header: ({column}) => (
           <button
             className="flex items-center gap-1"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
@@ -634,7 +614,7 @@ export function IssueList({
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => {
+        cell: ({row}) => {
           if (row.original._isGroup) return null;
           const status = row.getValue('status') as keyof typeof STATUS_BADGE_VARIANTS;
           return <Badge variant={STATUS_BADGE_VARIANTS[status]}>{status.replace('_', ' ')}</Badge>;
@@ -651,7 +631,7 @@ export function IssueList({
       {
         accessorKey: 'parent',
         header: 'Parent',
-        cell: ({ row }) => {
+        cell: ({row}) => {
           if (row.original._isGroup) return null;
           const parent = row.getValue('parent') as string | undefined;
           if (!parent) {
@@ -681,7 +661,7 @@ export function IssueList({
       },
       {
         accessorKey: 'updatedAt',
-        header: ({ column }) => (
+        header: ({column}) => (
           <button
             className="flex items-center gap-1"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
@@ -690,7 +670,7 @@ export function IssueList({
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => {
+        cell: ({row}) => {
           if (row.original._isGroup) return null;
           const latestEvent = latestEventMap.get(row.original.id);
           if (!latestEvent) {
@@ -698,12 +678,8 @@ export function IssueList({
           }
           return (
             <div className="text-xs" title={new Date(latestEvent.timestamp).toLocaleString()}>
-              <span className="text-muted-foreground">
-                {formatRelativeTime(latestEvent.timestamp)}
-              </span>
-              <span className="block text-muted-foreground/70">
-                {getEventDescription(latestEvent)}
-              </span>
+              <span className="text-muted-foreground">{formatRelativeTime(latestEvent.timestamp)}</span>
+              <span className="block text-muted-foreground/70">{getEventDescription(latestEvent)}</span>
             </div>
           );
         },
@@ -712,7 +688,18 @@ export function IssueList({
         },
       },
     ],
-    [issues, issueMap, latestEventMap, onSelectIssue, selectedIds, onToggleSelect, onSelectAll, visibleIssueIds, allSelected, someSelected]
+    [
+      issues,
+      issueMap,
+      latestEventMap,
+      onSelectIssue,
+      selectedIds,
+      onToggleSelect,
+      onSelectAll,
+      visibleIssueIds,
+      allSelected,
+      someSelected,
+    ]
   );
 
   const table = useReactTable({
@@ -752,7 +739,7 @@ export function IssueList({
       // Search description
       if (issue.description?.toLowerCase().includes(search)) return true;
       // Search comments
-      if (issue.comments.some(c => c.text.toLowerCase().includes(search))) return true;
+      if (issue.comments.some((c) => c.text.toLowerCase().includes(search))) return true;
 
       return false;
     },
@@ -817,11 +804,7 @@ export function IssueList({
           All Open
         </Button>
         {activePreset && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setActivePreset(null)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => setActivePreset(null)}>
             Clear
           </Button>
         )}
@@ -846,9 +829,7 @@ export function IssueList({
         />
         <Select
           value={(table.getColumn('status')?.getFilterValue() as string) ?? ''}
-          onChange={(e) =>
-            table.getColumn('status')?.setFilterValue(e.target.value)
-          }
+          onChange={(e) => table.getColumn('status')?.setFilterValue(e.target.value)}
         >
           <option value="">All Statuses</option>
           <option value="open">Open</option>
@@ -858,9 +839,7 @@ export function IssueList({
         </Select>
         <Select
           value={(table.getColumn('type')?.getFilterValue() as string) ?? ''}
-          onChange={(e) =>
-            table.getColumn('type')?.setFilterValue(e.target.value)
-          }
+          onChange={(e) => table.getColumn('type')?.setFilterValue(e.target.value)}
         >
           <option value="">All Types</option>
           <option value="task">Task</option>
@@ -869,9 +848,7 @@ export function IssueList({
         </Select>
         <Select
           value={(table.getColumn('priority')?.getFilterValue() as string) ?? ''}
-          onChange={(e) =>
-            table.getColumn('priority')?.setFilterValue(e.target.value)
-          }
+          onChange={(e) => table.getColumn('priority')?.setFilterValue(e.target.value)}
         >
           <option value="">All Priorities</option>
           <option value="0">Critical</option>
@@ -881,10 +858,7 @@ export function IssueList({
           <option value="4">Backlog</option>
         </Select>
         {uniqueSources.length > 1 && (
-          <Select
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-          >
+          <Select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}>
             <option value="">All Sources</option>
             {uniqueSources.map((source) => (
               <option key={source} value={source}>
@@ -919,12 +893,7 @@ export function IssueList({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -936,42 +905,46 @@ export function IssueList({
                 const isGroup = row.original._isGroup;
                 const status = row.original.status;
                 const rowHasOpenBlockers = isGroup ? false : hasOpenBlockers(row.original, issueMap);
-                const statusBorder = isGroup ? 'border-l-4 border-l-gray-400' :
-                  status === 'in_progress' ? 'border-l-4 border-l-blue-600' :
-                  status === 'blocked' || rowHasOpenBlockers ? 'border-l-4 border-l-red-600' :
-                  status === 'closed' ? 'border-l-4 border-l-emerald-500' :
-                  'border-l-4 border-l-amber-400'; // open
+                const statusBorder = isGroup
+                  ? 'border-l-4 border-l-gray-400'
+                  : status === 'in_progress'
+                  ? 'border-l-4 border-l-blue-600'
+                  : status === 'blocked' || rowHasOpenBlockers
+                  ? 'border-l-4 border-l-red-600'
+                  : status === 'closed'
+                  ? 'border-l-4 border-l-emerald-500'
+                  : 'border-l-4 border-l-amber-400'; // open
                 const isClosedRow = status === 'closed';
                 const issueType = row.original.type;
                 // Apply type backgrounds to cells (not row) to avoid bleeding through rounded corners
-                const cellTypeBg = isGroup ? '' :
-                  isClosedRow ? 'bg-muted/30' :
-                  issueType === 'epic' ? 'bg-indigo-100 dark:bg-indigo-950/40' :
-                  issueType === 'bug' ? 'bg-rose-50 dark:bg-rose-950/30' :
-                  'bg-surface';
+                const cellTypeBg = isGroup
+                  ? ''
+                  : isClosedRow
+                  ? 'bg-muted/30'
+                  : issueType === 'epic'
+                  ? 'bg-indigo-100 dark:bg-indigo-950/40'
+                  : issueType === 'bug'
+                  ? 'bg-rose-50 dark:bg-rose-950/30'
+                  : 'bg-surface';
                 return (
-                <TableRow
-                  key={row.id}
-                  className={`${isGroup ? '' : 'cursor-pointer'} ${statusBorder} ${isClosedRow ? 'opacity-75' : ''} ${isGroup ? 'bg-muted/50' : ''}`}
-                  onClick={() => !isGroup && onSelectIssue(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className={cellTypeBg}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              );
+                  <TableRow
+                    key={row.id}
+                    className={`${isGroup ? '' : 'cursor-pointer'} ${statusBorder} ${isClosedRow ? 'opacity-75' : ''} ${
+                      isGroup ? 'bg-muted/50' : ''
+                    }`}
+                    onClick={() => !isGroup && onSelectIssue(row.original)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className={cellTypeBg}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
               })
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No issues found.
                 </TableCell>
               </TableRow>

@@ -1,10 +1,18 @@
-import { Command } from 'commander';
+import {Command} from 'commander';
 import * as fs from 'fs';
 import * as readline from 'readline';
-import type { IssueType, Priority, Status, CreateEvent, UpdateEvent, CloseEvent, CommentEvent } from '../../shared/types.js';
-import { ensurePebbleDir, appendEvent } from '../lib/storage.js';
-import { outputError, formatJson } from '../lib/output.js';
-import { derivePrefix } from '../lib/id.js';
+import type {
+  IssueType,
+  Priority,
+  Status,
+  CreateEvent,
+  UpdateEvent,
+  CloseEvent,
+  CommentEvent,
+} from '../../shared/types.js';
+import {ensurePebbleDir, appendEvent} from '../lib/storage.js';
+import {outputError, formatJson} from '../lib/output.js';
+import {derivePrefix} from '../lib/id.js';
 import * as path from 'path';
 
 // Beads issue format
@@ -51,7 +59,7 @@ export function importCommand(program: Command): void {
         const beadsIssues = await parseBeadsFile(file);
 
         if (beadsIssues.length === 0) {
-          console.log(pretty ? 'No issues found in file.' : formatJson({ imported: 0 }));
+          console.log(pretty ? 'No issues found in file.' : formatJson({imported: 0}));
           return;
         }
 
@@ -59,7 +67,7 @@ export function importCommand(program: Command): void {
         const prefix = options.prefix ?? derivePrefix(path.basename(process.cwd()));
 
         // Convert to pebble events
-        const { events, idMap, stats } = convertToPebbleEvents(beadsIssues, prefix);
+        const {events, idMap, stats} = convertToPebbleEvents(beadsIssues, prefix);
 
         if (options.dryRun) {
           if (pretty) {
@@ -74,11 +82,13 @@ export function importCommand(program: Command): void {
               console.log(`  ${beadsId} -> ${pebbleId}`);
             }
           } else {
-            console.log(formatJson({
-              dryRun: true,
-              stats,
-              idMap: Object.fromEntries(idMap),
-            }));
+            console.log(
+              formatJson({
+                dryRun: true,
+                stats,
+                idMap: Object.fromEntries(idMap),
+              })
+            );
           }
           return;
         }
@@ -98,14 +108,16 @@ export function importCommand(program: Command): void {
           console.log(`  ${stats.parentChild} parent-child relationships`);
           console.log(`  ${stats.comments} comments`);
         } else {
-          console.log(formatJson({
-            imported: stats.created,
-            closed: stats.closed,
-            dependencies: stats.dependencies,
-            parentChild: stats.parentChild,
-            comments: stats.comments,
-            idMap: Object.fromEntries(idMap),
-          }));
+          console.log(
+            formatJson({
+              imported: stats.created,
+              closed: stats.closed,
+              dependencies: stats.dependencies,
+              parentChild: stats.parentChild,
+              comments: stats.comments,
+              idMap: Object.fromEntries(idMap),
+            })
+          );
         }
       } catch (error) {
         outputError(error as Error, pretty);
@@ -142,12 +154,12 @@ function convertToPebbleEvents(
 ): {
   events: (CreateEvent | UpdateEvent | CloseEvent | CommentEvent)[];
   idMap: Map<string, string>;
-  stats: { created: number; closed: number; dependencies: number; comments: number; parentChild: number };
+  stats: {created: number; closed: number; dependencies: number; comments: number; parentChild: number};
 } {
   const events: (CreateEvent | UpdateEvent | CloseEvent | CommentEvent)[] = [];
   const idMap = new Map<string, string>();
   const issueTypeMap = new Map<string, string>(); // beadsId -> issue_type
-  const stats = { created: 0, closed: 0, dependencies: 0, comments: 0, parentChild: 0 };
+  const stats = {created: 0, closed: 0, dependencies: 0, comments: 0, parentChild: 0};
 
   // First pass: create ID mapping and type mapping
   for (const issue of beadsIssues) {
@@ -270,7 +282,7 @@ function convertToPebbleEvents(
     }
   }
 
-  return { events, idMap, stats };
+  return {events, idMap, stats};
 }
 
 function generateSuffix(): string {

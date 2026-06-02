@@ -1,10 +1,10 @@
-import { Command } from 'commander';
-import type { Status, CommentEvent } from '../../shared/types.js';
-import { STATUSES, STATUS_LABELS } from '../../shared/types.js';
-import { getOrCreatePebbleDir, readEvents } from '../lib/storage.js';
-import { getIssues, getChildren, getIssue } from '../lib/state.js';
-import { outputError, formatJson } from '../lib/output.js';
-import { formatRelativeTime } from '../../shared/time.js';
+import {Command} from 'commander';
+import type {Status, CommentEvent} from '../../shared/types.js';
+import {STATUSES, STATUS_LABELS} from '../../shared/types.js';
+import {getOrCreatePebbleDir, readEvents} from '../lib/storage.js';
+import {getIssues, getChildren, getIssue} from '../lib/state.js';
+import {outputError, formatJson} from '../lib/output.js';
+import {formatRelativeTime} from '../../shared/time.js';
 
 interface ChildCounts {
   total: number;
@@ -46,8 +46,8 @@ interface InProgressIssue {
   createdAt: string;
   updatedAt: string;
   lastSource?: string;
-  parent?: { id: string; title: string };
-  comments: Array<{ text: string; timestamp: string; source?: string }>;
+  parent?: {id: string; title: string};
+  comments: Array<{text: string; timestamp: string; source?: string}>;
 }
 
 interface ClosedIssue {
@@ -56,15 +56,15 @@ interface ClosedIssue {
   type: string;
   closedAt: string;
   lastSource?: string;
-  parent?: { id: string; title: string };
+  parent?: {id: string; title: string};
 }
 
-function getIssueComments(issueId: string): Array<{ text: string; timestamp: string; source?: string }> {
+function getIssueComments(issueId: string): Array<{text: string; timestamp: string; source?: string}> {
   const events = readEvents();
   return events
     .filter((e): e is CommentEvent => e.type === 'comment' && e.issueId === issueId)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .map((e) => ({ text: e.data.text, timestamp: e.timestamp, source: e.source }));
+    .map((e) => ({text: e.data.text, timestamp: e.timestamp, source: e.source}));
 }
 
 function formatInProgressPretty(issues: InProgressIssue[]): string {
@@ -76,7 +76,9 @@ function formatInProgressPretty(issues: InProgressIssue[]): string {
 
   for (const issue of issues) {
     lines.push(`▶ ${issue.id}: ${issue.title} [${issue.type}]`);
-    lines.push(`  Updated: ${formatRelativeTime(issue.updatedAt)}${issue.lastSource ? ` | Source: ${issue.lastSource}` : ''}`);
+    lines.push(
+      `  Updated: ${formatRelativeTime(issue.updatedAt)}${issue.lastSource ? ` | Source: ${issue.lastSource}` : ''}`
+    );
     if (issue.parent) {
       lines.push(`  Parent: ${issue.parent.title}`);
     }
@@ -104,7 +106,9 @@ function formatClosedIssuesPretty(issues: ClosedIssue[]): string {
 
   for (const issue of issues) {
     lines.push(`✓ ${issue.id}: ${issue.title} [${issue.type}]`);
-    lines.push(`  Closed: ${formatRelativeTime(issue.closedAt)}${issue.lastSource ? ` | Source: ${issue.lastSource}` : ''}`);
+    lines.push(
+      `  Closed: ${formatRelativeTime(issue.closedAt)}${issue.lastSource ? ` | Source: ${issue.lastSource}` : ''}`
+    );
     if (issue.parent) {
       lines.push(`  Parent: ${issue.parent.title}`);
     }
@@ -125,13 +129,15 @@ function formatSummaryPretty(summaries: EpicSummary[], sectionHeader: string): s
   lines.push('');
 
   for (const summary of summaries) {
-    const { children } = summary;
+    const {children} = summary;
 
     // Epic line: ID: Title
     lines.push(`${summary.id}: ${summary.title}`);
 
     // Timestamps
-    lines.push(`  Created: ${formatRelativeTime(summary.createdAt)} | Updated: ${formatRelativeTime(summary.updatedAt)}`);
+    lines.push(
+      `  Created: ${formatRelativeTime(summary.createdAt)} | Updated: ${formatRelativeTime(summary.updatedAt)}`
+    );
 
     // Counts
     lines.push(`  Issues: ${children.done}/${children.total} done`);
@@ -169,10 +175,10 @@ export function summaryCommand(program: Command): void {
         getOrCreatePebbleDir();
 
         // Get all epics
-        const allEpics = getIssues({ type: 'epic' });
+        const allEpics = getIssues({type: 'epic'});
 
         // Helper to build summary for an epic
-        const buildSummary = (epic: typeof allEpics[0]): EpicSummary => {
+        const buildSummary = (epic: (typeof allEpics)[0]): EpicSummary => {
           const summary: EpicSummary = {
             id: epic.id,
             title: epic.title,
@@ -208,9 +214,7 @@ export function summaryCommand(program: Command): void {
           let epics = allEpics.filter((e) => e.status === status);
 
           // Sort by createdAt descending (newest first)
-          epics.sort((a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
+          epics.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
           // Apply limit
           if (limit > 0) {
@@ -228,10 +232,8 @@ export function summaryCommand(program: Command): void {
         }
 
         // Get in_progress issues with their comments
-        const inProgressIssues = getIssues({ status: 'in_progress' });
-        inProgressIssues.sort((a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
+        const inProgressIssues = getIssues({status: 'in_progress'});
+        inProgressIssues.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
         const inProgressSummaries: InProgressIssue[] = inProgressIssues.map((issue) => {
           const summary: InProgressIssue = {
@@ -246,7 +248,7 @@ export function summaryCommand(program: Command): void {
           if (issue.parent) {
             const parentIssue = getIssue(issue.parent, true);
             if (parentIssue) {
-              summary.parent = { id: parentIssue.id, title: parentIssue.title };
+              summary.parent = {id: parentIssue.id, title: parentIssue.title};
             }
           }
           return summary;
@@ -256,19 +258,14 @@ export function summaryCommand(program: Command): void {
         const openEpics = allEpics.filter((e) => e.status !== 'closed');
 
         // Filter closed epics to last 72 hours (using updatedAt as proxy for close time)
-        const seventyTwoHoursAgo = Date.now() - (72 * 60 * 60 * 1000);
-        const closedEpics = allEpics.filter((e) =>
-          e.status === 'closed' &&
-          new Date(e.updatedAt).getTime() > seventyTwoHoursAgo
+        const seventyTwoHoursAgo = Date.now() - 72 * 60 * 60 * 1000;
+        const closedEpics = allEpics.filter(
+          (e) => e.status === 'closed' && new Date(e.updatedAt).getTime() > seventyTwoHoursAgo
         );
 
         // Sort both by createdAt descending
-        openEpics.sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        closedEpics.sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        openEpics.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        closedEpics.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         // Apply limit to each section
         const limitedOpen = limit > 0 ? openEpics.slice(0, limit) : openEpics;
@@ -278,10 +275,8 @@ export function summaryCommand(program: Command): void {
         const closedSummaries = limitedClosed.map(buildSummary);
 
         // Get last 20 closed issues (any type)
-        let closedIssues = getIssues({ status: 'closed' });
-        closedIssues.sort((a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
+        let closedIssues = getIssues({status: 'closed'});
+        closedIssues.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
         closedIssues = closedIssues.slice(0, 20);
 
         const recentlyClosedSummaries: ClosedIssue[] = closedIssues.map((issue) => {
@@ -295,7 +290,7 @@ export function summaryCommand(program: Command): void {
           if (issue.parent) {
             const parentIssue = getIssue(issue.parent, true);
             if (parentIssue) {
-              summary.parent = { id: parentIssue.id, title: parentIssue.title };
+              summary.parent = {id: parentIssue.id, title: parentIssue.title};
             }
           }
           return summary;
@@ -325,7 +320,14 @@ export function summaryCommand(program: Command): void {
           }
           console.log(output.join('\n'));
         } else {
-          console.log(formatJson({ inProgress: inProgressSummaries, open: openSummaries, closed: closedSummaries, recentlyClosed: recentlyClosedSummaries }));
+          console.log(
+            formatJson({
+              inProgress: inProgressSummaries,
+              open: openSummaries,
+              closed: closedSummaries,
+              recentlyClosed: recentlyClosedSummaries,
+            })
+          );
         }
       } catch (error) {
         outputError(error as Error, pretty);

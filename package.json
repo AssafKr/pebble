@@ -16,6 +16,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --config ./.prettierrc --write .",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -56,6 +57,7 @@
     "framer-motion": "^12.29.0",
     "lucide-react": "^0.562.0",
     "postcss": "^8.4.41",
+    "prettier": "^2.8.4",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-router-dom": "^6.30.4",

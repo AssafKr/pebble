@@ -1,6 +1,6 @@
 import React from 'react';
-import type { IssueEvent, Issue } from '../../shared/types';
-import { EventTimeline } from './EventTimeline';
+import type {IssueEvent, Issue} from '../../shared/types';
+import {EventTimeline} from './EventTimeline';
 
 interface HistoryViewProps {
   events: IssueEvent[];

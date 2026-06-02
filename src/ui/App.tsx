@@ -1,37 +1,47 @@
-import { Suspense, useState, useEffect, useMemo, useCallback, useRef, type RefObject, type Dispatch, type SetStateAction } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Toaster } from 'sonner';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { useIssues, useSuspenseIssues, useInvalidateIssuesData } from './hooks/useIssues';
-import { useAppNavigation } from './hooks/useAppNavigation';
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import type { AppView } from './lib/routes';
-import { viewPath } from './lib/routes';
-import { IssueList, type FilterPreset } from './components/IssueList';
-import type { SortingState, ColumnFiltersState, ExpandedState } from '@tanstack/react-table';
-import { HistoryView } from './components/HistoryView';
-import { CommentsView } from './components/CommentsView';
-import { Dashboard } from './components/Dashboard';
-import { Breadcrumbs } from './components/Breadcrumbs';
-import { CreateIssueForm } from './components/CreateIssueForm';
-import { BulkActionBar } from './components/BulkActionBar';
-import { ThemeToggle } from './components/ThemeToggle';
-import { SourceManager } from './components/SourceManager';
-import { IssueDetailSkeleton } from './components/IssueDetailSkeleton';
-import { SuspendedIssueDetail } from './components/SuspendedIssueDetail';
-import { IssuesQueryBoundary } from './components/IssuesQueryBoundary';
-import { IssuesStreamSubscriber } from './components/IssuesStreamSubscriber';
-import { LegacySearchRedirect } from './components/LegacySearchRedirect';
-import { Button } from './components/ui/button';
-import type { Issue } from '../shared/types';
-import { fetchSources, type SourcesResponse } from './lib/api';
-import { List, History, LayoutDashboard, RefreshCw, Loader2, Plus, FolderSync, MessageSquare } from 'lucide-react';
-import { Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import {
+  Suspense,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  type RefObject,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
+import {motion, AnimatePresence} from 'framer-motion';
+import {Toaster} from 'sonner';
+import {ThemeProvider, useTheme} from './contexts/ThemeContext';
+import {useIssues, useSuspenseIssues, useInvalidateIssuesData} from './hooks/useIssues';
+import {useAppNavigation} from './hooks/useAppNavigation';
+import {useKeyboardShortcuts} from './hooks/useKeyboardShortcuts';
+import type {AppView} from './lib/routes';
+import {viewPath} from './lib/routes';
+import {IssueList, type FilterPreset} from './components/IssueList';
+import type {SortingState, ColumnFiltersState, ExpandedState} from '@tanstack/react-table';
+import {HistoryView} from './components/HistoryView';
+import {CommentsView} from './components/CommentsView';
+import {Dashboard} from './components/Dashboard';
+import {Breadcrumbs} from './components/Breadcrumbs';
+import {CreateIssueForm} from './components/CreateIssueForm';
+import {BulkActionBar} from './components/BulkActionBar';
+import {ThemeToggle} from './components/ThemeToggle';
+import {SourceManager} from './components/SourceManager';
+import {IssueDetailSkeleton} from './components/IssueDetailSkeleton';
+import {SuspendedIssueDetail} from './components/SuspendedIssueDetail';
+import {IssuesQueryBoundary} from './components/IssuesQueryBoundary';
+import {IssuesStreamSubscriber} from './components/IssuesStreamSubscriber';
+import {LegacySearchRedirect} from './components/LegacySearchRedirect';
+import {Button} from './components/ui/button';
+import type {Issue} from '../shared/types';
+import {fetchSources, type SourcesResponse} from './lib/api';
+import {List, History, LayoutDashboard, RefreshCw, Loader2, Plus, FolderSync, MessageSquare} from 'lucide-react';
+import {Navigate, NavLink, Route, Routes, useNavigate} from 'react-router-dom';
 
 const pageVariants = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -4 },
+  initial: {opacity: 0, y: 8},
+  animate: {opacity: 1, y: 0},
+  exit: {opacity: 0, y: -4},
 };
 
 const pageTransition = {
@@ -40,7 +50,7 @@ const pageTransition = {
 };
 
 function IssuesCountBadge() {
-  const { issues } = useSuspenseIssues();
+  const {issues} = useSuspenseIssues();
   return (
     <span className="text-sm text-foreground-muted bg-background-subtle px-3 py-1 rounded-full">
       {issues.length} issues
@@ -49,7 +59,7 @@ function IssuesCountBadge() {
 }
 
 function RefreshIssuesButton() {
-  const { isRefreshing, refresh } = useIssues();
+  const {isRefreshing, refresh} = useIssues();
 
   return (
     <Button
@@ -59,11 +69,7 @@ function RefreshIssuesButton() {
       disabled={isRefreshing}
       className="text-foreground-muted hover:text-foreground"
     >
-      {isRefreshing ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <RefreshCw className="h-4 w-4" />
-      )}
+      {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
     </Button>
   );
 }
@@ -71,11 +77,7 @@ function RefreshIssuesButton() {
 function MainContentSkeleton() {
   return (
     <div className="flex items-center justify-center h-64">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex flex-col items-center gap-3"
-      >
+      <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="flex flex-col items-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="text-sm text-foreground-muted">Loading issues...</span>
       </motion.div>
@@ -156,12 +158,12 @@ function AppMain({
   onCommentsSearchFilterChange,
   commentInputRef,
 }: AppMainProps) {
-  const { issues, events, refresh } = useSuspenseIssues();
+  const {issues, events, refresh} = useSuspenseIssues();
   const [keyboardIndex, setKeyboardIndex] = useState(-1);
 
   const selectedIssue = useMemo(
     () => (selectedIssueId ? issues.find((issue) => issue.id === selectedIssueId) ?? null : null),
-    [issues, selectedIssueId],
+    [issues, selectedIssueId]
   );
 
   const handleNavigateNext = useCallback(() => {
@@ -319,8 +321,8 @@ function AppMain({
 }
 
 function AppContent() {
-  const { resolvedTheme } = useTheme();
-  const { view, issueId, isValidView, goToView, selectIssue, closeIssue } = useAppNavigation();
+  const {resolvedTheme} = useTheme();
+  const {view, issueId, isValidView, goToView, selectIssue, closeIssue} = useAppNavigation();
   const navigate = useNavigate();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -331,7 +333,7 @@ function AppContent() {
 
   useEffect(() => {
     if (!isValidView) {
-      navigate(viewPath('list'), { replace: true });
+      navigate(viewPath('list'), {replace: true});
     }
   }, [isValidView, navigate]);
 
@@ -342,8 +344,8 @@ function AppContent() {
   }, []);
 
   const [listSorting, setListSorting] = useState<SortingState>([
-    { id: 'status', desc: false },
-    { id: 'updatedAt', desc: true },
+    {id: 'status', desc: false},
+    {id: 'updatedAt', desc: true},
   ]);
   const [listColumnFilters, setListColumnFilters] = useState<ColumnFiltersState>([]);
   const [listGlobalFilter, setListGlobalFilter] = useState('');
@@ -360,14 +362,14 @@ function AppContent() {
     (newView: AppView) => {
       goToView(newView);
     },
-    [goToView],
+    [goToView]
   );
 
   const handleSelectIssue = useCallback(
     (issue: Issue) => {
       selectIssue(issue);
     },
-    [selectIssue],
+    [selectIssue]
   );
 
   const handleCloseDetail = useCallback(() => {
@@ -415,19 +417,20 @@ function AppContent() {
 
             <div className="flex bg-background-subtle rounded-xl p-1">
               {[
-                { key: 'list' as const, icon: List, label: 'List' },
-                { key: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
-                { key: 'history' as const, icon: History, label: 'History' },
-                { key: 'comments' as const, icon: MessageSquare, label: 'Comments' },
-              ].map(({ key, icon: Icon, label }) => (
+                {key: 'list' as const, icon: List, label: 'List'},
+                {key: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard'},
+                {key: 'history' as const, icon: History, label: 'History'},
+                {key: 'comments' as const, icon: MessageSquare, label: 'Comments'},
+              ].map(({key, icon: Icon, label}) => (
                 <NavLink
                   key={key}
                   to={viewPath(key)}
-                  className={({ isActive }) => `
+                  className={({isActive}) => `
                     flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-fast
-                    ${isActive
-                      ? 'bg-surface text-foreground shadow-sm'
-                      : 'text-foreground-muted hover:text-foreground hover:bg-surface/50'
+                    ${
+                      isActive
+                        ? 'bg-surface text-foreground shadow-sm'
+                        : 'text-foreground-muted hover:text-foreground hover:bg-surface/50'
                     }
                   `}
                 >
@@ -459,11 +462,7 @@ function AppContent() {
         </div>
       </header>
 
-      <main
-        className={`px-6 py-8 transition-all duration-normal ${
-          issueId ? 'mr-[520px]' : ''
-        }`}
-      >
+      <main className={`px-6 py-8 transition-all duration-normal ${issueId ? 'mr-[520px]' : ''}`}>
         <IssuesQueryBoundary>
           <Suspense fallback={<MainContentSkeleton />}>
             <AppMain
@@ -508,11 +507,7 @@ function AppContent() {
 
       {issueId && (
         <IssuesQueryBoundary>
-          <Suspense
-            fallback={
-              <IssueDetailSkeleton issueId={issueId} onClose={handleCloseDetail} />
-            }
-          >
+          <Suspense fallback={<IssueDetailSkeleton issueId={issueId} onClose={handleCloseDetail} />}>
             <SuspendedIssueDetail
               issueId={issueId}
               onClose={handleCloseDetail}

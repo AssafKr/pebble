@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../lib/utils';
-import { X } from 'lucide-react';
+import {motion, AnimatePresence} from 'framer-motion';
+import {cn} from '../../lib/utils';
+import {X} from 'lucide-react';
 
 interface DialogProps {
   open: boolean;
@@ -9,7 +9,7 @@ interface DialogProps {
   children: React.ReactNode;
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function Dialog({open, onOpenChange, children}: DialogProps) {
   // Close on Escape key
   React.useEffect(() => {
     if (!open) return;
@@ -28,17 +28,15 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         <div className="fixed inset-0 z-50">
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{opacity: 0}}
+            animate={{opacity: 1}}
+            exit={{opacity: 0}}
+            transition={{duration: 0.2}}
             className="fixed inset-0 bg-foreground/20 backdrop-blur-sm"
             onClick={() => onOpenChange(false)}
           />
           {/* Content */}
-          <div className="fixed inset-0 flex items-center justify-center p-4">
-            {children}
-          </div>
+          <div className="fixed inset-0 flex items-center justify-center p-4">{children}</div>
         </div>
       )}
     </AnimatePresence>
@@ -51,13 +49,13 @@ interface DialogContentProps {
   onClose?: () => void;
 }
 
-export function DialogContent({ children, className, onClose }: DialogContentProps) {
+export function DialogContent({children, className, onClose}: DialogContentProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-      transition={{ type: 'spring', duration: 0.3, bounce: 0.1 }}
+      initial={{opacity: 0, scale: 0.95, y: 10}}
+      animate={{opacity: 1, scale: 1, y: 0}}
+      exit={{opacity: 0, scale: 0.95, y: 10}}
+      transition={{type: 'spring', duration: 0.3, bounce: 0.1}}
       className={cn(
         'relative bg-surface rounded-xl shadow-xl border border-border w-full max-w-md max-h-[85vh] overflow-auto',
         className
@@ -83,12 +81,8 @@ interface DialogHeaderProps {
   className?: string;
 }
 
-export function DialogHeader({ children, className }: DialogHeaderProps) {
-  return (
-    <div className={cn('flex flex-col space-y-2 p-6 pb-0', className)}>
-      {children}
-    </div>
-  );
+export function DialogHeader({children, className}: DialogHeaderProps) {
+  return <div className={cn('flex flex-col space-y-2 p-6 pb-0', className)}>{children}</div>;
 }
 
 interface DialogTitleProps {
@@ -96,12 +90,8 @@ interface DialogTitleProps {
   className?: string;
 }
 
-export function DialogTitle({ children, className }: DialogTitleProps) {
-  return (
-    <h2 className={cn('text-xl font-semibold text-foreground', className)}>
-      {children}
-    </h2>
-  );
+export function DialogTitle({children, className}: DialogTitleProps) {
+  return <h2 className={cn('text-xl font-semibold text-foreground', className)}>{children}</h2>;
 }
 
 interface DialogDescriptionProps {
@@ -109,12 +99,8 @@ interface DialogDescriptionProps {
   className?: string;
 }
 
-export function DialogDescription({ children, className }: DialogDescriptionProps) {
-  return (
-    <p className={cn('text-sm text-foreground-muted', className)}>
-      {children}
-    </p>
-  );
+export function DialogDescription({children, className}: DialogDescriptionProps) {
+  return <p className={cn('text-sm text-foreground-muted', className)}>{children}</p>;
 }
 
 interface DialogFooterProps {
@@ -122,10 +108,8 @@ interface DialogFooterProps {
   className?: string;
 }
 
-export function DialogFooter({ children, className }: DialogFooterProps) {
+export function DialogFooter({children, className}: DialogFooterProps) {
   return (
-    <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end gap-3 p-6 pt-4', className)}>
-      {children}
-    </div>
+    <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end gap-3 p-6 pt-4', className)}>{children}</div>
   );
 }
