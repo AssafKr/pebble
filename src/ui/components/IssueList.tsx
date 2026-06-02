@@ -436,13 +436,13 @@ export function IssueList({
         enableColumnFilter: false,
       },
       {
-        accessorKey: 'id',
+        accessorKey: 'title',
         header: ({column}) => (
           <button
             className="flex items-center gap-1"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
-            ID
+            Title
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
@@ -452,7 +452,6 @@ export function IssueList({
           const isGroup = row.original._isGroup;
           const lastSource = row.original.lastSource;
 
-          // Special rendering for synthetic group rows
           if (isGroup) {
             return (
               <div className="flex items-center">
@@ -472,58 +471,6 @@ export function IssueList({
             );
           }
 
-          return (
-            <div style={{paddingLeft: `${depth * 24}px`}}>
-              {/* ID row */}
-              <div className="flex items-center">
-                {canExpand ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      row.toggleExpanded();
-                    }}
-                    className="p-0.5 hover:bg-muted rounded mr-1"
-                  >
-                    {row.getIsExpanded() ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  </button>
-                ) : depth > 0 ? (
-                  <span className="w-5 mr-1 border-l-2 border-b-2 border-muted h-3 rounded-bl" />
-                ) : (
-                  <span className="w-5 mr-1" />
-                )}
-                <span className="font-mono text-xs">{row.getValue('id')}</span>
-              </div>
-              {/* Source folder row */}
-              {lastSource && (
-                <div
-                  className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5"
-                  style={{paddingLeft: '20px'}}
-                  title={`Last modified from: ${lastSource}`}
-                >
-                  <Folder className="h-3 w-3 flex-shrink-0" />
-                  <span className="truncate">{lastSource}</span>
-                </div>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: 'title',
-        header: ({column}) => (
-          <button
-            className="flex items-center gap-1"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Title
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        ),
-        cell: ({row}) => {
-          // Don't show title content for synthetic group rows (shown in ID column)
-          if (row.original._isGroup) {
-            return null;
-          }
           const blockerCount = countOpenBlockers(row.original, issueMap);
           // Count all descendants
           const countDescendants = (
@@ -551,29 +498,56 @@ export function IssueList({
           const allDone = childCount > 0 && closedCount === childCount;
           const isDeleted = row.original.deleted;
           return (
-            <div className={cn('flex items-center gap-2', isDeleted && 'opacity-60')}>
-              <span className={cn('font-medium', isDeleted && 'line-through')}>{row.getValue('title')}</span>
-              {isDeleted && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 flex items-center gap-1">
-                  <Trash2 className="h-3 w-3" />
-                  Deleted
-                </span>
-              )}
-              {childCount > 0 && (
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded ${
-                    allDone
-                      ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
-                      : 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400'
-                  }`}
+            <div style={{paddingLeft: `${depth * 24}px`}}>
+              <div className={cn('flex items-center gap-2', isDeleted && 'opacity-60')}>
+                {canExpand ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      row.toggleExpanded();
+                    }}
+                    className="p-0.5 hover:bg-muted rounded mr-1"
+                  >
+                    {row.getIsExpanded() ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </button>
+                ) : depth > 0 ? (
+                  <span className="w-5 mr-1 border-l-2 border-b-2 border-muted h-3 rounded-bl" />
+                ) : (
+                  <span className="w-5 mr-1" />
+                )}
+                <span className={cn('font-medium', isDeleted && 'line-through')}>{row.getValue('title')}</span>
+                {isDeleted && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 flex items-center gap-1">
+                    <Trash2 className="h-3 w-3" />
+                    Deleted
+                  </span>
+                )}
+                {childCount > 0 && (
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded ${
+                      allDone
+                        ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
+                        : 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400'
+                    }`}
+                  >
+                    {closedCount}/{childCount} done
+                  </span>
+                )}
+                {blockerCount > 0 && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400">
+                    {blockerCount} blocker{blockerCount > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+              {lastSource && (
+                <div
+                  className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5"
+                  style={{paddingLeft: '20px'}}
+                  title={`Last modified from: ${lastSource}`}
                 >
-                  {closedCount}/{childCount} done
-                </span>
-              )}
-              {blockerCount > 0 && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400">
-                  {blockerCount} blocker{blockerCount > 1 ? 's' : ''}
-                </span>
+                  <Folder className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{lastSource}</span>
+                </div>
               )}
             </div>
           );
@@ -638,37 +612,6 @@ export function IssueList({
         },
         filterFn: (row, id, value) => {
           return value === '' || row.getValue(id) === value;
-        },
-      },
-      {
-        accessorKey: 'parent',
-        header: 'Parent',
-        cell: ({row}) => {
-          if (row.original._isGroup) return null;
-          const parent = row.getValue('parent') as string | undefined;
-          if (!parent) {
-            return <span className="text-muted-foreground">—</span>;
-          }
-          const parentIssue = issueMap.get(parent);
-          if (!parentIssue) {
-            // Orphaned reference - render as plain text
-            return (
-              <span className="font-mono text-xs text-muted-foreground" title="Parent issue not found">
-                {parent}
-              </span>
-            );
-          }
-          return (
-            <button
-              className="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectIssue(parentIssue);
-              }}
-            >
-              {parent}
-            </button>
-          );
         },
       },
       {
