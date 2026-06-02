@@ -1,33 +1,33 @@
-import { useMemo } from 'react';
 import type { Issue } from '../../shared/types';
 import { ChevronRight, Home } from 'lucide-react';
-
-type View = 'list' | 'dashboard' | 'history' | 'comments';
+import type { AppView } from '../lib/routes';
 
 interface BreadcrumbsProps {
-  view: View;
-  selectedIssue: Issue | null;
-  allIssues: Issue[];
+  view: AppView;
+  selectedIssueId: string | null;
+  selectedIssue?: Issue | null;
+  allIssues?: Issue[];
   onClearSelection: () => void;
   onSelectIssue: (issue: Issue) => void;
-  onNavigateToView: (view: View) => void;
+  onNavigateToView: (view: AppView) => void;
 }
 
 export function Breadcrumbs({
   view,
-  selectedIssue,
-  allIssues,
+  selectedIssueId,
+  selectedIssue = null,
+  allIssues = [],
   onClearSelection,
   onSelectIssue,
   onNavigateToView,
 }: BreadcrumbsProps) {
-  const issueMap = useMemo(() => new Map(allIssues.map((i) => [i.id, i])), [allIssues]);
+  const issueMap = new Map(allIssues.map((issue) => [issue.id, issue]));
 
   // Build breadcrumb trail
   const crumbs: { label: string; onClick?: () => void }[] = [];
 
   // First crumb is always the view
-  const viewLabels: Record<View, string> = {
+  const viewLabels: Record<AppView, string> = {
     list: 'List',
     dashboard: 'Dashboard',
     history: 'History',
@@ -42,7 +42,7 @@ export function Breadcrumbs({
     },
   });
 
-  // For selected issue, show parent chain
+  // For selected issue, show parent chain when loaded; otherwise show the id from the URL
   if (selectedIssue) {
     // Build parent chain
     const parentChain: Issue[] = [];
@@ -68,6 +68,10 @@ export function Breadcrumbs({
     // Add the selected issue itself (no click handler - current location)
     crumbs.push({
       label: truncate(selectedIssue.title, 25),
+    });
+  } else if (selectedIssueId) {
+    crumbs.push({
+      label: selectedIssueId,
     });
   }
 

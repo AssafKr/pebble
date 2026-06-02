@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Suspense, useState, useEffect, useMemo, useCallback, useRef, type RefObject, type Dispatch, type SetStateAction } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { useIssues } from './hooks/useIssues';
+import { useIssues, useSuspenseIssues, useInvalidateIssuesData } from './hooks/useIssues';
+import { useAppNavigation } from './hooks/useAppNavigation';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import type { AppView } from './lib/routes';
+import { viewPath } from './lib/routes';
 import { IssueList, type FilterPreset } from './components/IssueList';
-import { IssueDetail } from './components/IssueDetail';
 import type { SortingState, ColumnFiltersState, ExpandedState } from '@tanstack/react-table';
 import { HistoryView } from './components/HistoryView';
 import { CommentsView } from './components/CommentsView';
@@ -15,14 +17,17 @@ import { CreateIssueForm } from './components/CreateIssueForm';
 import { BulkActionBar } from './components/BulkActionBar';
 import { ThemeToggle } from './components/ThemeToggle';
 import { SourceManager } from './components/SourceManager';
+import { IssueDetailSkeleton } from './components/IssueDetailSkeleton';
+import { SuspendedIssueDetail } from './components/SuspendedIssueDetail';
+import { IssuesQueryBoundary } from './components/IssuesQueryBoundary';
+import { IssuesStreamSubscriber } from './components/IssuesStreamSubscriber';
+import { LegacySearchRedirect } from './components/LegacySearchRedirect';
 import { Button } from './components/ui/button';
 import type { Issue } from '../shared/types';
 import { fetchSources, type SourcesResponse } from './lib/api';
 import { List, History, LayoutDashboard, RefreshCw, Loader2, Plus, FolderSync, MessageSquare } from 'lucide-react';
+import { Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
 
-type View = 'list' | 'dashboard' | 'history' | 'comments';
-
-// Page transition variants
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
@@ -34,63 +39,341 @@ const pageTransition = {
   ease: [0.4, 0, 0.2, 1] as const,
 };
 
+function IssuesCountBadge() {
+  const { issues } = useSuspenseIssues();
+  return (
+    <span className="text-sm text-foreground-muted bg-background-subtle px-3 py-1 rounded-full">
+      {issues.length} issues
+    </span>
+  );
+}
+
+function RefreshIssuesButton() {
+  const { isRefreshing, refresh } = useIssues();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => void refresh()}
+      disabled={isRefreshing}
+      className="text-foreground-muted hover:text-foreground"
+    >
+      {isRefreshing ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <RefreshCw className="h-4 w-4" />
+      )}
+    </Button>
+  );
+}
+
+function MainContentSkeleton() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center gap-3"
+      >
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="text-sm text-foreground-muted">Loading issues...</span>
+      </motion.div>
+    </div>
+  );
+}
+
+interface AppMainProps {
+  view: AppView;
+  selectedIssueId: string | null;
+  onViewChange: (view: AppView) => void;
+  onSelectIssue: (issue: Issue) => void;
+  onClearSelectedIssue: () => void;
+  createDialogOpen: boolean;
+  onCreateDialogOpenChange: (open: boolean) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (issueId: string) => void;
+  onSelectAll: (issueIds: string[]) => void;
+  onClearSelection: () => void;
+  listSorting: SortingState;
+  onListSortingChange: Dispatch<SetStateAction<SortingState>>;
+  listColumnFilters: ColumnFiltersState;
+  onListColumnFiltersChange: Dispatch<SetStateAction<ColumnFiltersState>>;
+  listGlobalFilter: string;
+  onListGlobalFilterChange: Dispatch<SetStateAction<string>>;
+  listExpanded: ExpandedState;
+  onListExpandedChange: Dispatch<SetStateAction<ExpandedState>>;
+  listActivePreset: FilterPreset;
+  onListActivePresetChange: Dispatch<SetStateAction<FilterPreset>>;
+  listSourceFilter: string;
+  onListSourceFilterChange: Dispatch<SetStateAction<string>>;
+  showDeleted: boolean;
+  onShowDeletedChange: Dispatch<SetStateAction<boolean>>;
+  historySearchFilter: string;
+  onHistorySearchFilterChange: Dispatch<SetStateAction<string>>;
+  historyTypeFilter: string;
+  onHistoryTypeFilterChange: Dispatch<SetStateAction<string>>;
+  historyIssueFilter: string;
+  onHistoryIssueFilterChange: Dispatch<SetStateAction<string>>;
+  commentsSearchFilter: string;
+  onCommentsSearchFilterChange: Dispatch<SetStateAction<string>>;
+  commentInputRef: RefObject<HTMLTextAreaElement>;
+}
+
+function AppMain({
+  view,
+  selectedIssueId,
+  onViewChange,
+  onSelectIssue,
+  onClearSelectedIssue,
+  createDialogOpen,
+  onCreateDialogOpenChange,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
+  onClearSelection,
+  listSorting,
+  onListSortingChange,
+  listColumnFilters,
+  onListColumnFiltersChange,
+  listGlobalFilter,
+  onListGlobalFilterChange,
+  listExpanded,
+  onListExpandedChange,
+  listActivePreset,
+  onListActivePresetChange,
+  listSourceFilter,
+  onListSourceFilterChange,
+  showDeleted,
+  onShowDeletedChange,
+  historySearchFilter,
+  onHistorySearchFilterChange,
+  historyTypeFilter,
+  onHistoryTypeFilterChange,
+  historyIssueFilter,
+  onHistoryIssueFilterChange,
+  commentsSearchFilter,
+  onCommentsSearchFilterChange,
+  commentInputRef,
+}: AppMainProps) {
+  const { issues, events, refresh } = useSuspenseIssues();
+  const [keyboardIndex, setKeyboardIndex] = useState(-1);
+
+  const selectedIssue = useMemo(
+    () => (selectedIssueId ? issues.find((issue) => issue.id === selectedIssueId) ?? null : null),
+    [issues, selectedIssueId],
+  );
+
+  const handleNavigateNext = useCallback(() => {
+    if (view !== 'list' || issues.length === 0) return;
+    setKeyboardIndex((prev) => {
+      const next = Math.min(prev + 1, issues.length - 1);
+      onSelectIssue(issues[next]);
+      return next;
+    });
+  }, [view, issues, onSelectIssue]);
+
+  const handleNavigatePrev = useCallback(() => {
+    if (view !== 'list' || issues.length === 0) return;
+    setKeyboardIndex((prev) => {
+      const next = Math.max(prev - 1, 0);
+      onSelectIssue(issues[next]);
+      return next;
+    });
+  }, [view, issues, onSelectIssue]);
+
+  const handleOpenDetailShortcut = useCallback(() => {
+    if (keyboardIndex >= 0 && keyboardIndex < issues.length) {
+      onSelectIssue(issues[keyboardIndex]);
+    }
+  }, [keyboardIndex, issues, onSelectIssue]);
+
+  const handleFocusComment = useCallback(() => {
+    if (selectedIssueId && commentInputRef.current) {
+      commentInputRef.current.focus();
+    }
+  }, [selectedIssueId, commentInputRef]);
+
+  useKeyboardShortcuts({
+    onNewIssue: () => onCreateDialogOpenChange(true),
+    onNavigateNext: handleNavigateNext,
+    onNavigatePrev: handleNavigatePrev,
+    onOpenDetail: handleOpenDetailShortcut,
+    onFocusComment: handleFocusComment,
+  });
+
+  return (
+    <>
+      <Breadcrumbs
+        view={view}
+        selectedIssueId={selectedIssueId}
+        selectedIssue={selectedIssue}
+        allIssues={issues}
+        onClearSelection={onClearSelectedIssue}
+        onSelectIssue={onSelectIssue}
+        onNavigateToView={onViewChange}
+      />
+
+      <AnimatePresence mode="wait">
+        {view === 'list' && (
+          <motion.div
+            key="list"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={pageTransition}
+          >
+            <BulkActionBar
+              selectedIds={selectedIds}
+              onClearSelection={onClearSelection}
+              onRefresh={() => void refresh()}
+            />
+            <IssueList
+              issues={issues}
+              events={events}
+              onSelectIssue={onSelectIssue}
+              selectedIds={selectedIds}
+              onToggleSelect={onToggleSelect}
+              onSelectAll={onSelectAll}
+              onClearSelection={onClearSelection}
+              sorting={listSorting}
+              onSortingChange={onListSortingChange}
+              columnFilters={listColumnFilters}
+              onColumnFiltersChange={onListColumnFiltersChange}
+              globalFilter={listGlobalFilter}
+              onGlobalFilterChange={onListGlobalFilterChange}
+              expanded={listExpanded}
+              onExpandedChange={onListExpandedChange}
+              activePreset={listActivePreset}
+              onActivePresetChange={onListActivePresetChange}
+              sourceFilter={listSourceFilter}
+              onSourceFilterChange={onListSourceFilterChange}
+              showDeleted={showDeleted}
+              onShowDeletedChange={onShowDeletedChange}
+            />
+          </motion.div>
+        )}
+        {view === 'dashboard' && (
+          <motion.div
+            key="dashboard"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={pageTransition}
+          >
+            <Dashboard issues={issues} events={events} onSelectIssue={onSelectIssue} />
+          </motion.div>
+        )}
+        {view === 'history' && (
+          <motion.div
+            key="history"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={pageTransition}
+          >
+            <HistoryView
+              events={events}
+              issues={issues}
+              onSelectIssue={onSelectIssue}
+              searchFilter={historySearchFilter}
+              onSearchFilterChange={onHistorySearchFilterChange}
+              typeFilter={historyTypeFilter}
+              onTypeFilterChange={onHistoryTypeFilterChange}
+              issueFilter={historyIssueFilter}
+              onIssueFilterChange={onHistoryIssueFilterChange}
+            />
+          </motion.div>
+        )}
+        {view === 'comments' && (
+          <motion.div
+            key="comments"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={pageTransition}
+          >
+            <CommentsView
+              events={events}
+              issues={issues}
+              onSelectIssue={onSelectIssue}
+              searchFilter={commentsSearchFilter}
+              onSearchFilterChange={onCommentsSearchFilterChange}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <CreateIssueForm
+        open={createDialogOpen}
+        onOpenChange={onCreateDialogOpenChange}
+        onCreated={() => void refresh()}
+        epics={issues}
+      />
+    </>
+  );
+}
+
 function AppContent() {
   const { resolvedTheme } = useTheme();
-  const { issues, events, loading, error, refresh } = useIssues();
-  const [view, setView] = useState<View>('list');
-  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const { view, issueId, isValidView, goToView, selectIssue, closeIssue } = useAppNavigation();
+  const navigate = useNavigate();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // Source management state
   const [sources, setSources] = useState<SourcesResponse | null>(null);
   const [sourceManagerOpen, setSourceManagerOpen] = useState(false);
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const invalidateIssues = useInvalidateIssuesData();
 
-  // Fetch sources on mount
+  useEffect(() => {
+    if (!isValidView) {
+      navigate(viewPath('list'), { replace: true });
+    }
+  }, [isValidView, navigate]);
+
   useEffect(() => {
     fetchSources()
       .then(setSources)
       .catch(() => setSources(null));
   }, []);
 
-  // Lifted IssueList filter state (persists across tab switches)
   const [listSorting, setListSorting] = useState<SortingState>([
-    { id: 'status', desc: false },     // in_progress → open → blocked → closed
-    { id: 'updatedAt', desc: true }    // Then newest first
+    { id: 'status', desc: false },
+    { id: 'updatedAt', desc: true },
   ]);
   const [listColumnFilters, setListColumnFilters] = useState<ColumnFiltersState>([]);
   const [listGlobalFilter, setListGlobalFilter] = useState('');
-  const [listExpanded, setListExpanded] = useState<ExpandedState>({}); // Start collapsed
+  const [listExpanded, setListExpanded] = useState<ExpandedState>({});
   const [listActivePreset, setListActivePreset] = useState<FilterPreset>(null);
   const [listSourceFilter, setListSourceFilter] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
-
-  // Lifted HistoryView filter state (persists across tab switches)
   const [historySearchFilter, setHistorySearchFilter] = useState('');
   const [historyTypeFilter, setHistoryTypeFilter] = useState('');
   const [historyIssueFilter, setHistoryIssueFilter] = useState('');
-
-  // Lifted CommentsView filter state (persists across tab switches)
   const [commentsSearchFilter, setCommentsSearchFilter] = useState('');
 
-  // Get all potential parents for the create form parent selector
-  const parentCandidates = issues;
+  const handleViewChange = useCallback(
+    (newView: AppView) => {
+      goToView(newView);
+    },
+    [goToView],
+  );
 
-  // Close detail panel when view changes
-  const handleViewChange = (newView: View) => {
-    setSelectedIssue(null);
-    setView(newView);
-  };
+  const handleSelectIssue = useCallback(
+    (issue: Issue) => {
+      selectIssue(issue);
+    },
+    [selectIssue],
+  );
 
-  const handleSelectIssue = (issue: Issue) => {
-    setSelectedIssue(issue);
-  };
+  const handleCloseDetail = useCallback(() => {
+    closeIssue();
+  }, [closeIssue]);
 
-  const handleCloseDetail = () => {
-    setSelectedIssue(null);
-  };
-
-  // Bulk selection handlers
   const handleToggleSelect = useCallback((issueId: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -111,113 +394,25 @@ function AppContent() {
     setSelectedIds(new Set());
   }, []);
 
-  // Ref for focusing comment input via keyboard shortcut
-  const commentInputRef = useRef<HTMLTextAreaElement>(null);
-
-  // Keyboard navigation index (for j/k shortcuts in list view)
-  const [keyboardIndex, setKeyboardIndex] = useState(-1);
-
-  // Get flat list of visible issues for keyboard navigation
-  const visibleIssues = useMemo(() => {
-    // In list view, return all issues (hierarchical navigation is complex, use flat for simplicity)
-    return issues;
-  }, [issues]);
-
-  // Keyboard shortcut handlers
-  const handleNewIssueShortcut = useCallback(() => {
-    setCreateDialogOpen(true);
-  }, []);
-
-  const handleNavigateNext = useCallback(() => {
-    if (view !== 'list' || visibleIssues.length === 0) return;
-    setKeyboardIndex((prev) => {
-      const next = Math.min(prev + 1, visibleIssues.length - 1);
-      setSelectedIssue(visibleIssues[next]);
-      return next;
-    });
-  }, [view, visibleIssues]);
-
-  const handleNavigatePrev = useCallback(() => {
-    if (view !== 'list' || visibleIssues.length === 0) return;
-    setKeyboardIndex((prev) => {
-      const next = Math.max(prev - 1, 0);
-      setSelectedIssue(visibleIssues[next]);
-      return next;
-    });
-  }, [view, visibleIssues]);
-
-  const handleOpenDetailShortcut = useCallback(() => {
-    if (keyboardIndex >= 0 && keyboardIndex < visibleIssues.length) {
-      setSelectedIssue(visibleIssues[keyboardIndex]);
-    }
-  }, [keyboardIndex, visibleIssues]);
-
-  const handleFocusComment = useCallback(() => {
-    if (selectedIssue && commentInputRef.current) {
-      commentInputRef.current.focus();
-    }
-  }, [selectedIssue]);
-
-  // Register keyboard shortcuts
-  useKeyboardShortcuts({
-    onNewIssue: handleNewIssueShortcut,
-    onNavigateNext: handleNavigateNext,
-    onNavigatePrev: handleNavigatePrev,
-    onOpenDetail: handleOpenDetailShortcut,
-    onFocusComment: handleFocusComment,
-  });
-
-  // Update selected issue when issues are refreshed
-  useEffect(() => {
-    if (selectedIssue) {
-      const updated = issues.find((i) => i.id === selectedIssue.id);
-      if (updated) {
-        setSelectedIssue(updated);
-      } else {
-        // Issue was deleted, close the panel
-        setSelectedIssue(null);
-      }
-    }
-  }, [issues, selectedIssue?.id]);
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-4 p-8 bg-surface rounded-2xl shadow-lg border border-border"
-        >
-          <h1 className="text-2xl font-display font-semibold text-destructive">Something went wrong</h1>
-          <p className="text-foreground-muted">{error.message}</p>
-          <Button onClick={refresh}>Try Again</Button>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      <LegacySearchRedirect />
+      <IssuesStreamSubscriber />
       <header className="border-b border-border-subtle sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <div className="container mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-3xl font-display font-semibold italic text-primary">pebble</h1>
-            <span className="text-sm text-foreground-muted bg-background-subtle px-3 py-1 rounded-full">
-              {issues.length} issues
-            </span>
+            <Suspense fallback={null}>
+              <IssuesCountBadge />
+            </Suspense>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button
-              onClick={() => setCreateDialogOpen(true)}
-              title="New Issue (n)"
-            >
+            <Button onClick={() => setCreateDialogOpen(true)} title="New Issue (n)">
               <Plus className="h-4 w-4 mr-2" />
               New Issue
             </Button>
 
-            {/* Tab navigation as pills */}
             <div className="flex bg-background-subtle rounded-xl p-1">
               {[
                 { key: 'list' as const, icon: List, label: 'List' },
@@ -225,12 +420,12 @@ function AppContent() {
                 { key: 'history' as const, icon: History, label: 'History' },
                 { key: 'comments' as const, icon: MessageSquare, label: 'Comments' },
               ].map(({ key, icon: Icon, label }) => (
-                <button
+                <NavLink
                   key={key}
-                  onClick={() => handleViewChange(key)}
-                  className={`
+                  to={viewPath(key)}
+                  className={({ isActive }) => `
                     flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-fast
-                    ${view === key
+                    ${isActive
                       ? 'bg-surface text-foreground shadow-sm'
                       : 'text-foreground-muted hover:text-foreground hover:bg-surface/50'
                     }
@@ -238,23 +433,11 @@ function AppContent() {
                 >
                   <Icon className="h-4 w-4" />
                   {label}
-                </button>
+                </NavLink>
               ))}
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={refresh}
-              disabled={loading}
-              className="text-foreground-muted hover:text-foreground"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-            </Button>
+            <RefreshIssuesButton />
 
             <Button
               variant="ghost"
@@ -276,170 +459,81 @@ function AppContent() {
         </div>
       </header>
 
-      {/* Breadcrumbs */}
-      <Breadcrumbs
-        view={view}
-        selectedIssue={selectedIssue}
-        allIssues={issues}
-        onClearSelection={handleCloseDetail}
-        onSelectIssue={handleSelectIssue}
-        onNavigateToView={handleViewChange}
-      />
-
-      {/* Main content with view transitions */}
       <main
         className={`px-6 py-8 transition-all duration-normal ${
-          selectedIssue ? 'mr-[520px]' : ''
+          issueId ? 'mr-[520px]' : ''
         }`}
       >
-        {loading && issues.length === 0 ? (
-          <div className="flex items-center justify-center h-64">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center gap-3"
-            >
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="text-sm text-foreground-muted">Loading issues...</span>
-            </motion.div>
-          </div>
-        ) : (
-          <AnimatePresence mode="wait">
-            {view === 'list' && (
-              <motion.div
-                key="list"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <BulkActionBar
-                  selectedIds={selectedIds}
-                  onClearSelection={handleClearSelection}
-                  onRefresh={refresh}
-                />
-                <IssueList
-                  issues={issues}
-                  events={events}
-                  onSelectIssue={handleSelectIssue}
-                  selectedIds={selectedIds}
-                  onToggleSelect={handleToggleSelect}
-                  onSelectAll={handleSelectAll}
-                  onClearSelection={handleClearSelection}
-                  sorting={listSorting}
-                  onSortingChange={setListSorting}
-                  columnFilters={listColumnFilters}
-                  onColumnFiltersChange={setListColumnFilters}
-                  globalFilter={listGlobalFilter}
-                  onGlobalFilterChange={setListGlobalFilter}
-                  expanded={listExpanded}
-                  onExpandedChange={setListExpanded}
-                  activePreset={listActivePreset}
-                  onActivePresetChange={setListActivePreset}
-                  sourceFilter={listSourceFilter}
-                  onSourceFilterChange={setListSourceFilter}
-                  showDeleted={showDeleted}
-                  onShowDeletedChange={setShowDeleted}
-                />
-              </motion.div>
-            )}
-            {view === 'dashboard' && (
-              <motion.div
-                key="dashboard"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <Dashboard
-                  issues={issues}
-                  events={events}
-                  onSelectIssue={handleSelectIssue}
-                />
-              </motion.div>
-            )}
-            {view === 'history' && (
-              <motion.div
-                key="history"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <HistoryView
-                  events={events}
-                  issues={issues}
-                  onSelectIssue={handleSelectIssue}
-                  searchFilter={historySearchFilter}
-                  onSearchFilterChange={setHistorySearchFilter}
-                  typeFilter={historyTypeFilter}
-                  onTypeFilterChange={setHistoryTypeFilter}
-                  issueFilter={historyIssueFilter}
-                  onIssueFilterChange={setHistoryIssueFilter}
-                />
-              </motion.div>
-            )}
-            {view === 'comments' && (
-              <motion.div
-                key="comments"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <CommentsView
-                  events={events}
-                  issues={issues}
-                  onSelectIssue={handleSelectIssue}
-                  searchFilter={commentsSearchFilter}
-                  onSearchFilterChange={setCommentsSearchFilter}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        )}
+        <IssuesQueryBoundary>
+          <Suspense fallback={<MainContentSkeleton />}>
+            <AppMain
+              view={view}
+              selectedIssueId={issueId}
+              onViewChange={handleViewChange}
+              onSelectIssue={handleSelectIssue}
+              onClearSelectedIssue={handleCloseDetail}
+              createDialogOpen={createDialogOpen}
+              onCreateDialogOpenChange={setCreateDialogOpen}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+              onSelectAll={handleSelectAll}
+              onClearSelection={handleClearSelection}
+              listSorting={listSorting}
+              onListSortingChange={setListSorting}
+              listColumnFilters={listColumnFilters}
+              onListColumnFiltersChange={setListColumnFilters}
+              listGlobalFilter={listGlobalFilter}
+              onListGlobalFilterChange={setListGlobalFilter}
+              listExpanded={listExpanded}
+              onListExpandedChange={setListExpanded}
+              listActivePreset={listActivePreset}
+              onListActivePresetChange={setListActivePreset}
+              listSourceFilter={listSourceFilter}
+              onListSourceFilterChange={setListSourceFilter}
+              showDeleted={showDeleted}
+              onShowDeletedChange={setShowDeleted}
+              historySearchFilter={historySearchFilter}
+              onHistorySearchFilterChange={setHistorySearchFilter}
+              historyTypeFilter={historyTypeFilter}
+              onHistoryTypeFilterChange={setHistoryTypeFilter}
+              historyIssueFilter={historyIssueFilter}
+              onHistoryIssueFilterChange={setHistoryIssueFilter}
+              commentsSearchFilter={commentsSearchFilter}
+              onCommentsSearchFilterChange={setCommentsSearchFilter}
+              commentInputRef={commentInputRef}
+            />
+          </Suspense>
+        </IssuesQueryBoundary>
       </main>
 
-      {/* Issue detail panel */}
-      <AnimatePresence>
-        {selectedIssue && (
-          <IssueDetail
-            issue={selectedIssue}
-            allIssues={issues}
-            events={events}
-            onClose={handleCloseDetail}
-            onSelectIssue={handleSelectIssue}
-            onRefresh={refresh}
-            commentInputRef={commentInputRef}
-          />
-        )}
-      </AnimatePresence>
+      {issueId && (
+        <IssuesQueryBoundary>
+          <Suspense
+            fallback={
+              <IssueDetailSkeleton issueId={issueId} onClose={handleCloseDetail} />
+            }
+          >
+            <SuspendedIssueDetail
+              issueId={issueId}
+              onClose={handleCloseDetail}
+              onSelectIssue={handleSelectIssue}
+              commentInputRef={commentInputRef}
+            />
+          </Suspense>
+        </IssuesQueryBoundary>
+      )}
 
-      {/* Create issue dialog */}
-      <CreateIssueForm
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onCreated={refresh}
-        epics={parentCandidates}
-      />
-
-      {/* Source manager modal */}
       {sourceManagerOpen && (
         <SourceManager
           sources={sources}
           onSourcesChange={(newSources) => {
             setSources(newSources);
-            refresh(); // Refresh issues when sources change
+            void invalidateIssues();
           }}
           onClose={() => setSourceManagerOpen(false)}
         />
       )}
 
-      {/* Toast notifications */}
       <Toaster
         position="bottom-right"
         richColors
@@ -459,7 +553,10 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <Routes>
+        <Route path="/" element={<Navigate to="/list" replace />} />
+        <Route path="/:view/:issueId?" element={<AppContent />} />
+      </Routes>
     </ThemeProvider>
   );
 }

@@ -1,72 +1,52 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Issue, IssueEvent } from '../../shared/types';
-import { fetchIssues, fetchEvents } from '../lib/api';
+import { useCallback } from 'react';
+import { useQuery, useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  fetchIssuesData,
+  issuesDataQueryKey,
+  type IssuesData,
+} from '../lib/issuesQueries';
 
-interface UseIssuesResult {
-  issues: Issue[];
-  events: IssueEvent[];
-  loading: boolean;
-  error: Error | null;
-  refresh: () => void;
+export type { IssuesData };
+
+export function useInvalidateIssuesData(): () => Promise<void> {
+  const queryClient = useQueryClient();
+  return useCallback(
+    () => queryClient.invalidateQueries({ queryKey: issuesDataQueryKey }),
+    [queryClient],
+  );
 }
 
-export function useIssues(): UseIssuesResult {
-  const [issues, setIssues] = useState<Issue[]>([]);
-  const [events, setEvents] = useState<IssueEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
+export function useSuspenseIssues(): IssuesData & { refresh: () => Promise<void> } {
+  const invalidate = useInvalidateIssuesData();
+  const { data } = useSuspenseQuery({
+    queryKey: issuesDataQueryKey,
+    queryFn: fetchIssuesData,
+  });
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [issuesData, eventsData] = await Promise.all([
-        fetchIssues(),
-        fetchEvents(),
-      ]);
-      setIssues(issuesData);
-      setEvents(eventsData);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  return {
+    ...data,
+    refresh: invalidate,
+  };
+}
 
-  // Initial load
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+export function useIssues(): IssuesData & {
+  loading: boolean;
+  error: Error | null;
+  isRefreshing: boolean;
+  refresh: () => Promise<void>;
+} {
+  const invalidate = useInvalidateIssuesData();
+  const { data, isLoading, error, isFetching } = useQuery({
+    queryKey: issuesDataQueryKey,
+    queryFn: fetchIssuesData,
+  });
 
-  // SSE subscription for real-time updates
-  useEffect(() => {
-    // Create EventSource connection
-    const eventSource = new EventSource('/api/events/stream');
-    eventSourceRef.current = eventSource;
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'change') {
-          // Refresh data when file changes
-          loadData();
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    };
-
-    eventSource.onerror = () => {
-      // Reconnection is handled automatically by EventSource
-      // Just log for debugging if needed
-    };
-
-    return () => {
-      eventSource.close();
-      eventSourceRef.current = null;
-    };
-  }, [loadData]);
-
-  return { issues, events, loading, error, refresh: loadData };
+  return {
+    issues: data?.issues ?? [],
+    events: data?.events ?? [],
+    loading: isLoading,
+    error: error ?? null,
+    isRefreshing: isFetching && !isLoading,
+    refresh: invalidate,
+  };
 }
