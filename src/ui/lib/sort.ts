@@ -73,3 +73,10 @@ export function sortByStatus(issues: Issue[]): Issue[] {
     return getStatusOrder(a.status) - getStatusOrder(b.status);
   });
 }
+
+/**
+ * Sorts kanban cards by priority (lower = higher), then title.
+ */
+export function sortKanbanCards(issues: Issue[]): Issue[] {
+  return [...issues].sort((a, b) => a.priority - b.priority || a.title.localeCompare(b.title));
+}

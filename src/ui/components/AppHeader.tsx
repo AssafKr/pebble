@@ -1,5 +1,5 @@
 import {Suspense} from 'react';
-import {FolderSync, History, LayoutDashboard, List, MessageSquare, Plus} from 'lucide-react';
+import {Columns3, FolderSync, History, LayoutDashboard, List, MessageSquare, Plus} from 'lucide-react';
 import {NavLink} from 'react-router-dom';
 import {useSources} from '../hooks/useSources';
 import {viewPath} from '../lib/routes';
@@ -34,6 +34,7 @@ export function AppHeader({onCreateIssue, onOpenSourceManager}: AppHeaderProps) 
           <div className="flex bg-background-subtle rounded-xl p-1">
             {[
               {key: 'list' as const, icon: List, label: 'List'},
+              {key: 'kanban' as const, icon: Columns3, label: 'Kanban'},
               {key: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard'},
               {key: 'history' as const, icon: History, label: 'History'},
               {key: 'comments' as const, icon: MessageSquare, label: 'Comments'},

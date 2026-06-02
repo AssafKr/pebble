@@ -7,6 +7,7 @@ import {CreateIssueForm} from './CreateIssueForm';
 import {Dashboard} from './Dashboard';
 import {HistoryView} from './HistoryView';
 import {IssueList} from './IssueList';
+import {KanbanBoard} from './KanbanBoard';
 import type {Issue} from '../../shared/types';
 import {useKeyboardShortcuts} from '../hooks/useKeyboardShortcuts';
 import {useSuspenseIssues} from '../hooks/useIssues';
@@ -118,6 +119,7 @@ export function AppMain({
               issues={issues}
               events={events}
               onSelectIssue={onSelectIssue}
+              activeIssueId={selectedIssueId}
               selectedIds={selectedIds}
               onToggleSelect={onToggleSelect}
               onSelectAll={onSelectAll}
@@ -137,6 +139,18 @@ export function AppMain({
               showDeleted={filters.showDeleted}
               onShowDeletedChange={filters.setShowDeleted}
             />
+          </motion.div>
+        )}
+        {view === 'kanban' && (
+          <motion.div
+            key="kanban"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={pageTransition}
+          >
+            <KanbanBoard issues={issues} onSelectIssue={onSelectIssue} activeIssueId={selectedIssueId} />
           </motion.div>
         )}
         {view === 'dashboard' && (

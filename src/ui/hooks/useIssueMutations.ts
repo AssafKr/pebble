@@ -16,6 +16,14 @@ import {
   type UpdateIssueInput,
 } from '../lib/api';
 import type {Priority, Status} from '../../shared/types';
+import {
+  applyIssueMutationResult,
+  beginIssuesOptimisticUpdate,
+  patchIssueStatus,
+  rollbackIssuesCache,
+  shouldSkipIssuesOptimistic,
+  type IssuesCacheContext,
+} from '../lib/issuesCache';
 import {queryKeys} from '../lib/queryKeys';
 
 function useInvalidateIssuesData() {
@@ -24,21 +32,52 @@ function useInvalidateIssuesData() {
 }
 
 export function useIssueMutations() {
+  const queryClient = useQueryClient();
   const invalidateIssues = useInvalidateIssuesData();
 
   const updateIssueMutation = useMutation({
     mutationFn: ({id, data}: {id: string; data: UpdateIssueInput}) => updateIssue(id, data),
-    onSuccess: invalidateIssues,
+    onMutate: async ({id, data}, context) => {
+      if (data.status === undefined || shouldSkipIssuesOptimistic(context.meta)) return {};
+      return beginIssuesOptimisticUpdate(queryClient, (cached) => patchIssueStatus(cached, id, data.status!));
+    },
+    onError: (_err, _vars, context) => {
+      rollbackIssuesCache(queryClient, context as IssuesCacheContext | undefined);
+    },
+    onSuccess: (result) => {
+      applyIssueMutationResult(queryClient, result);
+    },
+    onSettled: invalidateIssues,
   });
 
   const closeIssueMutation = useMutation({
     mutationFn: ({id, reason}: {id: string; reason?: string}) => closeIssue(id, reason),
-    onSuccess: invalidateIssues,
+    onMutate: async ({id}, context) => {
+      if (shouldSkipIssuesOptimistic(context.meta)) return {};
+      return beginIssuesOptimisticUpdate(queryClient, (cached) => patchIssueStatus(cached, id, 'closed'));
+    },
+    onError: (_err, _vars, context) => {
+      rollbackIssuesCache(queryClient, context as IssuesCacheContext | undefined);
+    },
+    onSuccess: (result) => {
+      applyIssueMutationResult(queryClient, result);
+    },
+    onSettled: invalidateIssues,
   });
 
   const reopenIssueMutation = useMutation({
     mutationFn: ({id, reason}: {id: string; reason?: string}) => reopenIssue(id, reason),
-    onSuccess: invalidateIssues,
+    onMutate: async ({id}, context) => {
+      if (shouldSkipIssuesOptimistic(context.meta)) return {};
+      return beginIssuesOptimisticUpdate(queryClient, (cached) => patchIssueStatus(cached, id, 'open'));
+    },
+    onError: (_err, _vars, context) => {
+      rollbackIssuesCache(queryClient, context as IssuesCacheContext | undefined);
+    },
+    onSuccess: (result) => {
+      applyIssueMutationResult(queryClient, result);
+    },
+    onSettled: invalidateIssues,
   });
 
   const addCommentMutation = useMutation({

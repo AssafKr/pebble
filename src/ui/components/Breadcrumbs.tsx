@@ -29,6 +29,7 @@ export function Breadcrumbs({
   // First crumb is always the view
   const viewLabels: Record<AppView, string> = {
     list: 'List',
+    kanban: 'Kanban',
     dashboard: 'Dashboard',
     history: 'History',
     comments: 'Comments',

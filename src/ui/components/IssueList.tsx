@@ -1,4 +1,4 @@
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect, useRef} from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -22,6 +22,8 @@ import {Button} from './ui/button';
 import {ArrowUpDown, ChevronRight, ChevronDown, Folder, FolderOpen, Trash2, X} from 'lucide-react';
 import {cn} from '../lib/utils';
 import {getCommonPrefix, getRelativePath} from '../lib/path';
+import {countOpenBlockers, hasOpenBlockers} from '../lib/issueBlockers';
+import {getIssueStatusBorderClass, getIssueTypeBackgroundClass, getIssueTypeBadgeClass} from '../lib/issueRowStyles';
 
 export type FilterPreset = 'ready' | 'blocked' | 'in_progress' | 'all_open' | null;
 import {getStatusOrder} from '../lib/sort';
@@ -50,28 +52,14 @@ export interface IssueListProps {
   onSourceFilterChange?: React.Dispatch<React.SetStateAction<string>>;
   showDeleted?: boolean;
   onShowDeletedChange?: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Issue from the URL — ancestors are expanded and this row is scrolled into view. */
+  activeIssueId?: string | null;
 }
 
 // Extended issue type with subRows for TanStack hierarchy
 interface IssueWithChildren extends Issue {
   subRows?: IssueWithChildren[];
   _isGroup?: boolean; // Synthetic group row (e.g., "No parent")
-}
-
-// Helper to check if issue has open (unresolved) blockers
-function hasOpenBlockers(issue: Issue, issueMap: Map<string, Issue>): boolean {
-  return issue.blockedBy.some((blockerId) => {
-    const blocker = issueMap.get(blockerId);
-    return blocker && blocker.status !== 'closed';
-  });
-}
-
-// Helper to count open blockers
-function countOpenBlockers(issue: Issue, issueMap: Map<string, Issue>): number {
-  return issue.blockedBy.filter((blockerId) => {
-    const blocker = issueMap.get(blockerId);
-    return blocker && blocker.status !== 'closed';
-  }).length;
 }
 
 // Build hierarchical data: supports unlimited nesting depth
@@ -162,6 +150,33 @@ function buildHierarchy(issues: Issue[]): IssueWithChildren[] {
   return epicsAndParents;
 }
 
+function getExpansionForIssue(issues: Issue[], issueId: string): Record<string, boolean> {
+  const issueMap = new Map(issues.map((i) => [i.id, i]));
+  const issue = issueMap.get(issueId);
+  if (!issue) return {};
+
+  const expanded: Record<string, boolean> = {};
+  let current: Issue | undefined = issue;
+
+  while (current?.parent && issueMap.has(current.parent)) {
+    expanded[current.parent] = true;
+    current = issueMap.get(current.parent);
+  }
+
+  const hasChildren = issues.some((i) => i.parent === issue.id);
+  const isOrphan = (!issue.parent || !issueMap.has(issue.parent)) && issue.type !== 'epic' && !hasChildren;
+  if (isOrphan) {
+    expanded['__NO_PARENT__'] = true;
+  }
+
+  return expanded;
+}
+
+function isInViewport(el: Element): boolean {
+  const rect = el.getBoundingClientRect();
+  return rect.top >= 0 && rect.bottom <= window.innerHeight;
+}
+
 // Get description of what changed in an event
 function getEventDescription(event: IssueEvent): string {
   switch (event.type) {
@@ -209,6 +224,7 @@ export function IssueList({
   onSourceFilterChange,
   showDeleted: showDeletedProp,
   onShowDeletedChange,
+  activeIssueId = null,
 }: IssueListProps) {
   // Unused for now, will be used by BulkActionBar
   void _onClearSelection;
@@ -240,6 +256,7 @@ export function IssueList({
   const setSourceFilter = onSourceFilterChange ?? setSourceFilterInternal;
   const showDeleted = showDeletedProp ?? showDeletedInternal;
   const setShowDeleted = onShowDeletedChange ?? setShowDeletedInternal;
+  const prevActiveIssueRef = useRef<string | null>(null);
 
   // Create lookup map for O(1) issue access
   const issueMap = useMemo(() => new Map(issues.map((i) => [i.id, i])), [issues]);
@@ -566,14 +583,8 @@ export function IssueList({
         header: 'Type',
         cell: ({row}) => {
           if (row.original._isGroup) return null;
-          const type = row.getValue('type') as string;
-          const colorClass =
-            type === 'epic'
-              ? 'bg-indigo-500 text-white hover:bg-indigo-600'
-              : type === 'bug'
-              ? 'bg-rose-500 text-white hover:bg-rose-600'
-              : 'bg-slate-500 text-white hover:bg-slate-600'; // task
-          return <Badge className={colorClass}>{type}</Badge>;
+          const type = row.getValue('type') as Issue['type'];
+          return <Badge className={getIssueTypeBadgeClass(type)}>{type}</Badge>;
         },
         filterFn: (row, id, value) => {
           return value === '' || row.getValue(id) === value;
@@ -705,6 +716,7 @@ export function IssueList({
   const table = useReactTable({
     data: hierarchicalData,
     columns,
+    getRowId: (row) => row.id,
     state: {
       sorting,
       columnFilters,
@@ -744,6 +756,35 @@ export function IssueList({
       return false;
     },
   });
+
+  useEffect(() => {
+    if (!activeIssueId) return;
+
+    const expansion = getExpansionForIssue(issues, activeIssueId);
+    if (Object.keys(expansion).length === 0) return;
+
+    setExpanded((prev) => {
+      const current = typeof prev === 'object' && prev !== null ? prev : {};
+      return {...current, ...expansion};
+    });
+  }, [activeIssueId, issues, setExpanded]);
+
+  useEffect(() => {
+    if (!activeIssueId) {
+      prevActiveIssueRef.current = null;
+      return;
+    }
+
+    const el = document.querySelector(`[data-issue-id="${CSS.escape(activeIssueId)}"]`);
+    if (!el) return;
+
+    const issueChanged = prevActiveIssueRef.current !== activeIssueId;
+    prevActiveIssueRef.current = activeIssueId;
+
+    if (issueChanged || !isInViewport(el)) {
+      el.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+    }
+  }, [activeIssueId, expanded, hierarchicalData]);
 
   // Handle preset selection
   const handlePresetClick = (preset: FilterPreset) => {
@@ -904,34 +945,21 @@ export function IssueList({
               table.getRowModel().rows.map((row) => {
                 const isGroup = row.original._isGroup;
                 const status = row.original.status;
-                const rowHasOpenBlockers = isGroup ? false : hasOpenBlockers(row.original, issueMap);
-                const statusBorder = isGroup
-                  ? 'border-l-4 border-l-gray-400'
-                  : status === 'in_progress'
-                  ? 'border-l-4 border-l-blue-600'
-                  : status === 'blocked' || rowHasOpenBlockers
-                  ? 'border-l-4 border-l-red-600'
-                  : status === 'closed'
-                  ? 'border-l-4 border-l-emerald-500'
-                  : 'border-l-4 border-l-amber-400'; // open
+                const statusBorder = getIssueStatusBorderClass(row.original, issueMap, {isGroup});
                 const isClosedRow = status === 'closed';
-                const issueType = row.original.type;
-                // Apply type backgrounds to cells (not row) to avoid bleeding through rounded corners
-                const cellTypeBg = isGroup
-                  ? ''
-                  : isClosedRow
-                  ? 'bg-muted/30'
-                  : issueType === 'epic'
-                  ? 'bg-indigo-100 dark:bg-indigo-950/40'
-                  : issueType === 'bug'
-                  ? 'bg-rose-50 dark:bg-rose-950/30'
-                  : 'bg-surface';
+                const isActiveIssue = activeIssueId === row.original.id;
+                const cellTypeBg = getIssueTypeBackgroundClass(row.original, {isGroup});
                 return (
                   <TableRow
                     key={row.id}
-                    className={`${isGroup ? '' : 'cursor-pointer'} ${statusBorder} ${isClosedRow ? 'opacity-75' : ''} ${
-                      isGroup ? 'bg-muted/50' : ''
-                    }`}
+                    data-issue-id={row.original.id}
+                    className={cn(
+                      isGroup ? '' : 'cursor-pointer',
+                      statusBorder,
+                      isClosedRow && 'opacity-75',
+                      isGroup && 'bg-muted/50',
+                      isActiveIssue && 'ring-2 ring-inset ring-primary/40 bg-primary/5'
+                    )}
                     onClick={() => !isGroup && onSelectIssue(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (

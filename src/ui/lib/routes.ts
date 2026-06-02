@@ -1,6 +1,6 @@
-export type AppView = 'list' | 'dashboard' | 'history' | 'comments';
+export type AppView = 'list' | 'kanban' | 'dashboard' | 'history' | 'comments';
 
-export const APP_VIEWS: readonly AppView[] = ['list', 'dashboard', 'history', 'comments'];
+export const APP_VIEWS: readonly AppView[] = ['list', 'kanban', 'dashboard', 'history', 'comments'];
 
 const APP_VIEW_SET = new Set<string>(APP_VIEWS);
 
