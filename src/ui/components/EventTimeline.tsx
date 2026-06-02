@@ -1,6 +1,7 @@
 import React, {useState, useMemo} from 'react';
 import type {IssueEvent, Issue} from '../../shared/types';
 import {TYPE_BADGE_VARIANTS, PRIORITY_DISPLAY_LABELS} from '../../shared/types';
+import {getPriorityTextClass} from '../lib/priorityStyles';
 import {Input} from './ui/input';
 import {Select} from './ui/select';
 import {Badge} from './ui/badge';
@@ -359,11 +360,7 @@ export function EventTimeline({
                               >
                                 {issue.type}
                               </Badge>
-                              <span
-                                className={`text-xs ${
-                                  issue.priority <= 1 ? 'font-semibold text-red-600' : 'text-muted-foreground'
-                                }`}
-                              >
+                              <span className={`text-xs ${getPriorityTextClass(issue.priority)}`}>
                                 {PRIORITY_DISPLAY_LABELS[issue.priority as keyof typeof PRIORITY_DISPLAY_LABELS]}
                               </span>
                               <span className="text-sm text-muted-foreground">— {issue.title}</span>
@@ -505,11 +502,7 @@ export function EventTimeline({
                                         >
                                           {issue.type}
                                         </Badge>
-                                        <span
-                                          className={`text-xs ${
-                                            issue.priority <= 1 ? 'font-semibold text-red-600' : 'text-muted-foreground'
-                                          }`}
-                                        >
+                                        <span className={`text-xs ${getPriorityTextClass(issue.priority)}`}>
                                           {
                                             PRIORITY_DISPLAY_LABELS[
                                               issue.priority as keyof typeof PRIORITY_DISPLAY_LABELS

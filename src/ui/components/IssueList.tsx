@@ -24,6 +24,7 @@ import {cn} from '../lib/utils';
 import {getCommonPrefix, getRelativePath} from '../lib/path';
 import {countOpenBlockers, hasOpenBlockers} from '../lib/issueBlockers';
 import {getIssueStatusBorderClass, getIssueTypeBackgroundClass, getIssueTypeBadgeClass} from '../lib/issueRowStyles';
+import {getPriorityTextClass} from '../lib/priorityStyles';
 
 export type FilterPreset = 'ready' | 'blocked' | 'in_progress' | 'all_open' | null;
 import {getStatusOrder} from '../lib/sort';
@@ -605,7 +606,7 @@ export function IssueList({
           if (row.original._isGroup) return null;
           const priority = row.getValue('priority') as keyof typeof PRIORITY_DISPLAY_LABELS;
           return (
-            <span className={priority <= 1 ? 'font-semibold text-red-600' : ''}>
+            <span className={getPriorityTextClass(priority)}>
               {PRIORITY_DISPLAY_LABELS[priority]}
             </span>
           );

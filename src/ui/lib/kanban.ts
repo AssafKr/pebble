@@ -5,10 +5,11 @@ import {sortKanbanCards} from './sort';
 
 export function isKanbanVisible(issue: Issue, issueMap: Map<string, Issue>): boolean {
   if (issue.deleted) return false;
+  if (issue.status === 'in_progress') return true;
 
   const parent = issue.parent ? issueMap.get(issue.parent) : undefined;
   if (parent?.status === 'in_progress') return true;
-  if (!issue.parent || !parent) return issue.status === 'in_progress';
+
   return false;
 }
 
