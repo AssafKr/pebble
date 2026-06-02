@@ -84,12 +84,7 @@ export function KanbanBoard({issues, onSelectIssue, activeIssueId = null}: Kanba
 
       <DragOverlay dropAnimation={null}>
         {activeDragIssue ? (
-          <IssueKanbanCard
-            issue={activeDragIssue}
-            issueMap={issueMap}
-            isDragging
-            onSelectIssue={onSelectIssue}
-          />
+          <IssueKanbanCard issue={activeDragIssue} issueMap={issueMap} isDragging onSelectIssue={onSelectIssue} />
         ) : null}
       </DragOverlay>
     </DndContext>

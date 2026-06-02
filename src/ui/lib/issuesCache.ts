@@ -26,9 +26,7 @@ export function patchIssuePriority(data: IssuesData, issueId: string, priority: 
   const now = new Date().toISOString();
   return {
     ...data,
-    issues: data.issues.map((issue) =>
-      issue.id === issueId ? {...issue, priority, updatedAt: now} : issue
-    ),
+    issues: data.issues.map((issue) => (issue.id === issueId ? {...issue, priority, updatedAt: now} : issue)),
   };
 }
 
@@ -79,10 +77,7 @@ export function rollbackIssuesCache(queryClient: QueryClient, context: IssuesCac
   }
 }
 
-export function applyIssueMutationResult(
-  queryClient: QueryClient,
-  result: Issue & {_cascadeClaimed?: string[]}
-): void {
+export function applyIssueMutationResult(queryClient: QueryClient, result: Issue & {_cascadeClaimed?: string[]}): void {
   const data = getIssuesData(queryClient);
   if (!data) return;
 

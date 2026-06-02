@@ -24,7 +24,13 @@ export function IssueKanbanCard({
   isDragging = false,
   onSelectIssue,
 }: IssueKanbanCardProps) {
-  const {attributes, listeners, setNodeRef, transform, isDragging: isDraggingLocal} = useDraggable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging: isDraggingLocal,
+  } = useDraggable({
     id: issue.id,
     data: {issue},
   });
@@ -79,9 +85,7 @@ export function IssueKanbanCard({
         </div>
         <p className="font-medium text-sm leading-snug line-clamp-2">{issue.title}</p>
         <div className="flex items-center justify-between gap-2 text-xs">
-          <span className={getPriorityTextClass(issue.priority)}>
-            {PRIORITY_DISPLAY_LABELS[issue.priority]}
-          </span>
+          <span className={getPriorityTextClass(issue.priority)}>{PRIORITY_DISPLAY_LABELS[issue.priority]}</span>
           {blockerCount > 0 && (
             <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400">
               {blockerCount} blocker{blockerCount > 1 ? 's' : ''}

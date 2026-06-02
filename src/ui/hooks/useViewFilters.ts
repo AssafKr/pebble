@@ -3,10 +3,7 @@ import type {SortingState, ColumnFiltersState, ExpandedState} from '@tanstack/re
 import type {FilterPreset} from '../components/IssueList';
 
 export function useViewFilters() {
-  const [listSorting, setListSorting] = useState<SortingState>([
-    {id: 'status', desc: false},
-    {id: 'updatedAt', desc: true},
-  ]);
+  const [listSorting, setListSorting] = useState<SortingState>([{id: 'title', desc: false}]);
   const [listColumnFilters, setListColumnFilters] = useState<ColumnFiltersState>([]);
   const [listGlobalFilter, setListGlobalFilter] = useState('');
   const [listExpanded, setListExpanded] = useState<ExpandedState>({});

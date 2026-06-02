@@ -19,10 +19,7 @@ export function KanbanColumn({columnId, issues, issueMap, activeIssueId, onSelec
   return (
     <div
       ref={setNodeRef}
-      className={cn(
-        'flex flex-col min-w-0 flex-1 rounded-xl transition-colors',
-        isOver && 'bg-primary/5'
-      )}
+      className={cn('flex flex-col min-w-0 flex-1 rounded-xl transition-colors', isOver && 'bg-primary/5')}
     >
       <div className="flex items-center justify-between mb-3 px-1">
         <h2 className="text-sm font-semibold text-foreground">{KANBAN_COLUMN_LABELS[columnId]}</h2>
