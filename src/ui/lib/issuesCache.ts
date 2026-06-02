@@ -1,5 +1,5 @@
 import type {QueryClient} from '@tanstack/react-query';
-import type {Issue, Status} from '../../shared/types';
+import type {Issue, Priority, Status} from '../../shared/types';
 import type {IssuesData} from './issuesQueries';
 import {queryKeys} from './queryKeys';
 
@@ -20,6 +20,16 @@ export function setIssuesData(queryClient: QueryClient, data: IssuesData): void 
 function stripCascadeMeta(issue: Issue & {_cascadeClaimed?: string[]}): Issue {
   const {_cascadeClaimed: _, ...rest} = issue;
   return rest;
+}
+
+export function patchIssuePriority(data: IssuesData, issueId: string, priority: Priority): IssuesData {
+  const now = new Date().toISOString();
+  return {
+    ...data,
+    issues: data.issues.map((issue) =>
+      issue.id === issueId ? {...issue, priority, updatedAt: now} : issue
+    ),
+  };
 }
 
 export function patchIssueStatus(data: IssuesData, issueId: string, status: Status): IssuesData {

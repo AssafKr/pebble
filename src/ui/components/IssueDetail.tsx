@@ -518,7 +518,7 @@ export function IssueDetail({issue, allIssues, events, onClose, onSelectIssue, c
             <Select
               value={issue.status}
               onChange={(e) => handleStatusChange(e.target.value as Status)}
-              disabled={savingUpdate || issue.status === 'closed' || issue.deleted}
+              disabled={issue.status === 'closed' || issue.deleted}
             >
               {STATUSES.filter((s) => s !== 'closed').map((s) => {
                 const blockedTitle =
@@ -543,7 +543,7 @@ export function IssueDetail({issue, allIssues, events, onClose, onSelectIssue, c
             <Select
               value={issue.priority}
               onChange={(e) => handlePriorityChange(Number(e.target.value) as Priority)}
-              disabled={savingUpdate || issue.deleted}
+              disabled={issue.deleted}
             >
               {PRIORITIES.map((p) => (
                 <option key={p} value={p}>

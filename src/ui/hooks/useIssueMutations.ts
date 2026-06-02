@@ -19,6 +19,7 @@ import type {Priority, Status} from '../../shared/types';
 import {
   applyIssueMutationResult,
   beginIssuesOptimisticUpdate,
+  patchIssuePriority,
   patchIssueStatus,
   rollbackIssuesCache,
   shouldSkipIssuesOptimistic,
@@ -38,8 +39,15 @@ export function useIssueMutations() {
   const updateIssueMutation = useMutation({
     mutationFn: ({id, data}: {id: string; data: UpdateIssueInput}) => updateIssue(id, data),
     onMutate: async ({id, data}, context) => {
-      if (data.status === undefined || shouldSkipIssuesOptimistic(context.meta)) return {};
-      return beginIssuesOptimisticUpdate(queryClient, (cached) => patchIssueStatus(cached, id, data.status!));
+      if (shouldSkipIssuesOptimistic(context.meta)) return {};
+      const {status, priority} = data;
+      if (status === undefined && priority === undefined) return {};
+      return beginIssuesOptimisticUpdate(queryClient, (cached) => {
+        let next = cached;
+        if (status !== undefined) next = patchIssueStatus(next, id, status);
+        if (priority !== undefined) next = patchIssuePriority(next, id, priority);
+        return next;
+      });
     },
     onError: (_err, _vars, context) => {
       rollbackIssuesCache(queryClient, context as IssuesCacheContext | undefined);
