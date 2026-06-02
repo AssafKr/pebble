@@ -144,6 +144,7 @@ export function AppMain({
         {view === 'kanban' && (
           <motion.div
             key="kanban"
+            className="h-[calc(100dvh-12rem)] min-h-[420px]"
             variants={pageVariants}
             initial="initial"
             animate="animate"

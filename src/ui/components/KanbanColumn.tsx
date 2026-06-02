@@ -17,17 +17,15 @@ export function KanbanColumn({columnId, issues, issueMap, activeIssueId, onSelec
   const {setNodeRef, isOver} = useDroppable({id: columnId});
 
   return (
-    <div
-      ref={setNodeRef}
-      className={cn('flex flex-col min-w-0 flex-1 rounded-xl transition-colors', isOver && 'bg-primary/5')}
-    >
-      <div className="flex items-center justify-between mb-3 px-1">
+    <div className={cn('flex flex-col min-h-0 h-full min-w-0 flex-1', isOver && 'bg-primary/5 rounded-xl')}>
+      <div className="flex shrink-0 items-center justify-between mb-3 px-1">
         <h2 className="text-sm font-semibold text-foreground">{KANBAN_COLUMN_LABELS[columnId]}</h2>
         <span className="text-xs text-muted-foreground tabular-nums">{issues.length}</span>
       </div>
       <div
+        ref={setNodeRef}
         className={cn(
-          'flex-1 rounded-xl border border-dashed border-border-subtle bg-muted/20 p-3 space-y-3 min-h-[200px] transition-colors',
+          'flex-1 min-h-0 overflow-y-auto rounded-xl border border-dashed border-border-subtle bg-muted/20 p-3 space-y-3 transition-colors',
           isOver && 'border-primary/50'
         )}
       >

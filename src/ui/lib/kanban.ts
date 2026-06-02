@@ -1,12 +1,26 @@
 import type {Issue} from '../../shared/types';
 import type {KanbanColumnId} from './issueRowStyles';
-import {getKanbanColumnForStatus} from './issueRowStyles';
 import {sortKanbanCards} from './sort';
+
+export const RECENTLY_CLOSED_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function isRecentlyClosed(issue: Issue, now = Date.now()): boolean {
+  if (issue.status !== 'closed') return false;
+  const closedAt = issue.statusChangedAt ?? issue.updatedAt;
+  return now - new Date(closedAt).getTime() <= RECENTLY_CLOSED_MS;
+}
+
+export function getKanbanColumnForIssue(issue: Issue): KanbanColumnId | null {
+  if (issue.status === 'in_progress') return 'in_progress';
+  if (isRecentlyClosed(issue)) return 'closed';
+  if (issue.status === 'closed') return null;
+  return 'open';
+}
 
 export function isKanbanVisible(issue: Issue, issueMap: Map<string, Issue>): boolean {
   if (issue.deleted) return false;
   if (issue.status === 'in_progress') return true;
-
+  if (isRecentlyClosed(issue)) return true;
   const parent = issue.parent ? issueMap.get(issue.parent) : undefined;
   if (parent?.status === 'in_progress') return true;
 
@@ -25,12 +39,14 @@ export interface KanbanColumns {
 }
 
 export function partitionKanbanColumns(issues: Issue[]): KanbanColumns {
+  console.log('partitionKanbanColumns', issues);
   const issueMap = new Map(issues.map((i) => [i.id, i]));
   const columns: KanbanColumns = {open: [], in_progress: [], closed: []};
 
   for (const issue of issues) {
     if (!isKanbanVisible(issue, issueMap)) continue;
-    const columnId = getKanbanColumnForStatus(issue.status);
+    const columnId = getKanbanColumnForIssue(issue);
+    if (columnId === null) continue;
     columns[columnId].push(issue);
   }
 
@@ -46,7 +62,7 @@ export const KANBAN_COLUMN_ORDER: KanbanColumnId[] = ['open', 'in_progress', 'cl
 export const KANBAN_COLUMN_LABELS: Record<KanbanColumnId, string> = {
   open: 'Open',
   in_progress: 'In Progress',
-  closed: 'Closed',
+  closed: 'Recently Closed',
 };
 
 const KANBAN_COLUMN_ID_SET = new Set<string>(KANBAN_COLUMN_ORDER);
@@ -64,6 +80,6 @@ export function resolveKanbanDropColumn(
   const id = String(overId);
   if (isKanbanColumnId(id)) return id;
   const overIssue = issueMap.get(id);
-  if (overIssue) return getKanbanColumnForStatus(overIssue.status);
+  if (overIssue) return getKanbanColumnForIssue(overIssue) ?? undefined;
   return undefined;
 }

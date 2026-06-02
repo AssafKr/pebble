@@ -10,8 +10,12 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import type {Issue} from '../../shared/types';
-import {KANBAN_COLUMN_ORDER, partitionKanbanColumns, resolveKanbanDropColumn} from '../lib/kanban';
-import {getKanbanColumnForStatus} from '../lib/issueRowStyles';
+import {
+  getKanbanColumnForIssue,
+  KANBAN_COLUMN_ORDER,
+  partitionKanbanColumns,
+  resolveKanbanDropColumn,
+} from '../lib/kanban';
 import {useKanbanStatusChange} from '../hooks/useKanbanStatusChange';
 import {IssueKanbanCard} from './IssueKanbanCard';
 import {KanbanColumn} from './KanbanColumn';
@@ -51,8 +55,8 @@ export function KanbanBoard({issues, onSelectIssue, activeIssueId = null}: Kanba
     const targetColumn = resolveKanbanDropColumn(over.id, issueMap);
     if (!targetColumn) return;
 
-    const currentColumn = getKanbanColumnForStatus(issue.status);
-    if (currentColumn === targetColumn) return;
+    const currentColumn = getKanbanColumnForIssue(issue);
+    if (!currentColumn || currentColumn === targetColumn) return;
 
     await moveToColumn(issue, targetColumn);
   };
@@ -69,7 +73,7 @@ export function KanbanBoard({issues, onSelectIssue, activeIssueId = null}: Kanba
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid h-full min-h-0 grid-cols-1 grid-rows-3 md:grid-cols-3 md:grid-rows-1 gap-6">
         {KANBAN_COLUMN_ORDER.map((columnId) => (
           <KanbanColumn
             key={columnId}

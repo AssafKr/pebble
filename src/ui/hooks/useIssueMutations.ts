@@ -37,9 +37,9 @@ export function useIssueMutations() {
   const invalidateIssues = useInvalidateIssuesData();
 
   const updateIssueMutation = useMutation({
-    mutationFn: ({id, data}: {id: string; data: UpdateIssueInput}) => updateIssue(id, data),
-    onMutate: async ({id, data}, context) => {
-      if (shouldSkipIssuesOptimistic(context.meta)) return {};
+    mutationFn: ({id, data}: {id: string; data: UpdateIssueInput; skipOptimistic?: boolean}) => updateIssue(id, data),
+    onMutate: async ({id, data, skipOptimistic}, context) => {
+      if (skipOptimistic || shouldSkipIssuesOptimistic(context.meta)) return {};
       const {status, priority} = data;
       if (status === undefined && priority === undefined) return {};
       return beginIssuesOptimisticUpdate(queryClient, (cached) => {
@@ -59,9 +59,9 @@ export function useIssueMutations() {
   });
 
   const closeIssueMutation = useMutation({
-    mutationFn: ({id, reason}: {id: string; reason?: string}) => closeIssue(id, reason),
-    onMutate: async ({id}, context) => {
-      if (shouldSkipIssuesOptimistic(context.meta)) return {};
+    mutationFn: ({id, reason}: {id: string; reason?: string; skipOptimistic?: boolean}) => closeIssue(id, reason),
+    onMutate: async ({id, skipOptimistic}, context) => {
+      if (skipOptimistic || shouldSkipIssuesOptimistic(context.meta)) return {};
       return beginIssuesOptimisticUpdate(queryClient, (cached) => patchIssueStatus(cached, id, 'closed'));
     },
     onError: (_err, _vars, context) => {
@@ -74,9 +74,9 @@ export function useIssueMutations() {
   });
 
   const reopenIssueMutation = useMutation({
-    mutationFn: ({id, reason}: {id: string; reason?: string}) => reopenIssue(id, reason),
-    onMutate: async ({id}, context) => {
-      if (shouldSkipIssuesOptimistic(context.meta)) return {};
+    mutationFn: ({id, reason}: {id: string; reason?: string; skipOptimistic?: boolean}) => reopenIssue(id, reason),
+    onMutate: async ({id, skipOptimistic}, context) => {
+      if (skipOptimistic || shouldSkipIssuesOptimistic(context.meta)) return {};
       return beginIssuesOptimisticUpdate(queryClient, (cached) => patchIssueStatus(cached, id, 'open'));
     },
     onError: (_err, _vars, context) => {
