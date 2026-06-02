@@ -267,3 +267,132 @@
     }
   }
 }
+
+/* Markdown content panel — visually distinct from app chrome */
+.markdown-panel {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-left: 3px solid hsl(var(--primary) / 0.4);
+  border-radius: var(--radius-md);
+  padding: 0.875rem 1rem;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  line-height: 1.65;
+  box-shadow: var(--shadow-xs);
+}
+
+.markdown-content {
+  line-height: inherit;
+}
+
+.markdown-content > :first-child {
+  margin-top: 0;
+}
+
+.markdown-content > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content p {
+  margin: 0.5em 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 1.25em 0 0.5em;
+}
+
+.markdown-content h1 {
+  font-size: 1.25rem;
+}
+
+.markdown-content h2 {
+  font-size: 1.125rem;
+}
+
+.markdown-content h3 {
+  font-size: 1rem;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.markdown-content li {
+  margin: 0.25em 0;
+}
+
+.markdown-content code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  background: hsl(var(--background-subtle));
+  border: 1px solid hsl(var(--border-subtle));
+  padding: 0.15em 0.4em;
+  border-radius: var(--radius-sm);
+}
+
+.markdown-content pre {
+  margin: 0.75em 0;
+  padding: 0.75em 1em;
+  background: hsl(var(--background-subtle));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.markdown-content blockquote {
+  margin: 0.75em 0;
+  padding: 0.5em 0 0.5em 1em;
+  border-left: 3px solid hsl(var(--primary) / 0.5);
+  background: hsl(var(--primary-soft) / 0.35);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: hsl(var(--foreground-muted));
+}
+
+.markdown-content a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown-content a:hover {
+  color: hsl(var(--primary-hover));
+}
+
+.markdown-content hr {
+  margin: 1em 0;
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.markdown-content table {
+  width: 100%;
+  margin: 0.75em 0;
+  border-collapse: collapse;
+  font-size: 0.875em;
+}
+
+.markdown-content th,
+.markdown-content td {
+  padding: 0.4em 0.6em;
+  border: 1px solid hsl(var(--border));
+  text-align: left;
+}
+
+.markdown-content th {
+  background: hsl(var(--background-subtle));
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}

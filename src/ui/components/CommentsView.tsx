@@ -5,6 +5,7 @@ import {Input} from './ui/input';
 import {Badge} from './ui/badge';
 import {MessageSquare, AlertTriangle, Folder} from 'lucide-react';
 import {formatRelativeTime} from '../../shared/time';
+import {MarkdownContent} from './MarkdownContent';
 
 interface CommentsViewProps {
   events: IssueEvent[];
@@ -179,7 +180,7 @@ function CommentCard({event, issue, ancestry, openBlockers, onSelectIssue}: Comm
       )}
 
       {/* Comment text */}
-      <div className="mt-3 text-sm whitespace-pre-wrap bg-muted/30 rounded p-3">{commentText}</div>
+      <MarkdownContent content={commentText} className="mt-3" />
 
       {/* Footer: Timestamp and source */}
       <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">

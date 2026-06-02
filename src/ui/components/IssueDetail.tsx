@@ -40,6 +40,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import {EventTimeline} from './EventTimeline';
+import {MarkdownContent} from './MarkdownContent';
 import {formatRelativeTime} from '../../shared/time';
 import {sortByStatus, sortByDependencies} from '../lib/sort';
 import {useIssueMutations} from '../hooks/useIssueMutations';
@@ -648,9 +649,11 @@ export function IssueDetail({issue, allIssues, events, onClose, onSelectIssue, c
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap min-h-[40px]">
-              {issue.description || 'No description.'}
-            </p>
+            <MarkdownContent
+              content={issue.description || ''}
+              className="min-h-[40px]"
+              emptyFallback="No description."
+            />
           )}
         </div>
 
@@ -881,15 +884,15 @@ export function IssueDetail({issue, allIssues, events, onClose, onSelectIssue, c
               {[...issue.comments]
                 .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                 .map((comment, index) => (
-                  <div key={`${comment.timestamp}-${index}`} className="bg-muted rounded-lg p-3 text-sm space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div key={`${comment.timestamp}-${index}`} className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
                       <Clock className="h-3 w-3" />
                       <span title={new Date(comment.timestamp).toLocaleString()}>
                         {formatRelativeTime(comment.timestamp)}
                       </span>
                       {comment.author && <span>by {comment.author}</span>}
                     </div>
-                    <p className="whitespace-pre-wrap">{comment.text}</p>
+                    <MarkdownContent content={comment.text} />
                   </div>
                 ))}
             </div>
