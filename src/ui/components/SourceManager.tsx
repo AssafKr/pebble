@@ -1,23 +1,25 @@
-import {useState, useEffect} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {toast} from 'sonner';
 import {FolderSync, Plus, Trash2, X, GitBranch} from 'lucide-react';
 import {Button} from './ui/button';
 import {Input} from './ui/input';
-import {addSource, removeSource, fetchWorktrees, type SourcesResponse, type Worktree} from '../lib/api';
+import {useSourceMutations} from '../hooks/useSourceMutations';
+import {useSources} from '../hooks/useSources';
+import {useWorktrees} from '../hooks/useWorktrees';
+import type {Worktree} from '../lib/api';
 
 interface SourceManagerProps {
-  sources: SourcesResponse | null;
-  onSourcesChange: (sources: SourcesResponse) => void;
   onClose: () => void;
 }
 
-export function SourceManager({sources, onSourcesChange, onClose}: SourceManagerProps) {
+export function SourceManager({onClose}: SourceManagerProps) {
   const [newPath, setNewPath] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [worktrees, setWorktrees] = useState<Worktree[]>([]);
-  const [loadingWorktrees, setLoadingWorktrees] = useState(true);
+  const {data: sources} = useSources();
+  const {data: worktrees = [], isLoading: loadingWorktrees} = useWorktrees();
+  const {addSource, removeSource} = useSourceMutations();
 
-  // Close on Escape key
+  const loading = addSource.isPending || removeSource.isPending;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -28,113 +30,81 @@ export function SourceManager({sources, onSourcesChange, onClose}: SourceManager
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Fetch worktrees on mount
-  useEffect(() => {
-    fetchWorktrees()
-      .then((data) => setWorktrees(data.worktrees))
-      .catch(() => setWorktrees([]))
-      .finally(() => setLoadingWorktrees(false));
-  }, []);
-
-  // Update worktree isActive status when sources change
-  useEffect(() => {
-    if (sources) {
-      setWorktrees((prev) =>
-        prev.map((wt) => ({
-          ...wt,
-          isActive: wt.issuesFile ? sources.files.includes(wt.issuesFile) : false,
-        }))
-      );
-    }
-  }, [sources]);
+  const worktreesWithIssues = useMemo(() => {
+    const withIssues = worktrees.filter((wt) => wt.hasIssues);
+    if (!sources) return withIssues;
+    return withIssues.map((wt) => ({
+      ...wt,
+      isActive: wt.issuesFile ? sources.files.includes(wt.issuesFile) : false,
+    }));
+  }, [worktrees, sources]);
 
   const handleAdd = async () => {
     if (!newPath.trim()) return;
 
-    setLoading(true);
     try {
-      const result = await addSource(newPath.trim());
-      onSourcesChange(result);
+      await addSource.mutateAsync(newPath.trim());
       setNewPath('');
       toast.success('Source added');
     } catch (error) {
       toast.error('Failed to add source', {
         description: error instanceof Error ? error.message : undefined,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleRemove = async (index: number) => {
-    setLoading(true);
     try {
-      const result = await removeSource(index);
-      onSourcesChange(result);
+      await removeSource.mutateAsync(index);
       toast.success('Source removed');
     } catch (error) {
       toast.error('Failed to remove source', {
         description: error instanceof Error ? error.message : undefined,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleWorktreeToggle = async (worktree: Worktree) => {
     if (!worktree.issuesFile) return;
 
-    setLoading(true);
     try {
       if (worktree.isActive) {
-        // Find index and remove
         const index = sources?.files.indexOf(worktree.issuesFile);
         if (index !== undefined && index >= 0) {
-          const result = await removeSource(index);
-          onSourcesChange(result);
+          await removeSource.mutateAsync(index);
           toast.success('Worktree removed');
         }
       } else {
-        // Add
-        const result = await addSource(worktree.issuesFile);
-        onSourcesChange(result);
+        await addSource.mutateAsync(worktree.issuesFile);
         toast.success('Worktree added');
       }
     } catch (error) {
       toast.error('Failed to update worktree', {
         description: error instanceof Error ? error.message : undefined,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !loading) {
-      handleAdd();
+      void handleAdd();
     }
   };
 
-  // Abbreviate path to last 3 segments
   const abbreviatePath = (fullPath: string) => {
     const parts = fullPath.split('/');
     if (parts.length <= 3) return fullPath;
     return '.../' + parts.slice(-3).join('/');
   };
 
-  // Get worktree display name (folder name from path)
   const getWorktreeName = (worktree: Worktree) => {
     const parts = worktree.path.split('/');
     return parts[parts.length - 1] || worktree.path;
   };
 
-  // Filter worktrees with issues files
-  const worktreesWithIssues = worktrees.filter((wt) => wt.hasIssues);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-card border rounded-lg shadow-lg w-full max-w-lg mx-4">
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <FolderSync className="h-5 w-5" />
@@ -145,9 +115,7 @@ export function SourceManager({sources, onSourcesChange, onClose}: SourceManager
           </Button>
         </div>
 
-        {/* Content */}
         <div className="p-4 space-y-4">
-          {/* Detected Worktrees */}
           {!loadingWorktrees && worktreesWithIssues.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium flex items-center gap-1">
@@ -165,7 +133,7 @@ export function SourceManager({sources, onSourcesChange, onClose}: SourceManager
                     <input
                       type="checkbox"
                       checked={worktree.isActive}
-                      onChange={() => handleWorktreeToggle(worktree)}
+                      onChange={() => void handleWorktreeToggle(worktree)}
                       disabled={loading || (worktree.isActive && sources?.files.length === 1)}
                       className="h-4 w-4 rounded border-gray-300"
                     />
@@ -191,7 +159,6 @@ export function SourceManager({sources, onSourcesChange, onClose}: SourceManager
             </div>
           )}
 
-          {/* Manual path input */}
           <div className="space-y-2">
             <p className="text-sm font-medium">Add Custom Path</p>
             <div className="flex gap-2">
@@ -203,14 +170,13 @@ export function SourceManager({sources, onSourcesChange, onClose}: SourceManager
                 disabled={loading}
                 className="flex-1"
               />
-              <Button onClick={handleAdd} disabled={loading || !newPath.trim()}>
+              <Button onClick={() => void handleAdd()} disabled={loading || !newPath.trim()}>
                 <Plus className="h-4 w-4 mr-1" />
                 Add
               </Button>
             </div>
           </div>
 
-          {/* Current sources */}
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
               {sources?.files.length || 0} source{sources?.files.length !== 1 ? 's' : ''} active
@@ -224,7 +190,7 @@ export function SourceManager({sources, onSourcesChange, onClose}: SourceManager
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleRemove(index)}
+                    onClick={() => void handleRemove(index)}
                     disabled={loading || sources.files.length === 1}
                     title={sources.files.length === 1 ? 'Cannot remove the last source' : 'Remove source'}
                   >

@@ -42,17 +42,7 @@ import {
 import {EventTimeline} from './EventTimeline';
 import {formatRelativeTime} from '../../shared/time';
 import {sortByStatus, sortByDependencies} from '../lib/sort';
-import {
-  updateIssue,
-  closeIssue,
-  reopenIssue,
-  addComment,
-  addDependency,
-  removeDependency,
-  addRelated,
-  removeRelated,
-  restoreIssue,
-} from '../lib/api';
+import {useIssueMutations} from '../hooks/useIssueMutations';
 
 interface IssueDetailProps {
   issue: Issue;
@@ -60,19 +50,21 @@ interface IssueDetailProps {
   events: IssueEvent[];
   onClose: () => void;
   onSelectIssue: (issue: Issue) => void;
-  onRefresh?: () => void;
   commentInputRef?: RefObject<HTMLTextAreaElement>;
 }
 
-export function IssueDetail({
-  issue,
-  allIssues,
-  events,
-  onClose,
-  onSelectIssue,
-  onRefresh,
-  commentInputRef,
-}: IssueDetailProps) {
+export function IssueDetail({issue, allIssues, events, onClose, onSelectIssue, commentInputRef}: IssueDetailProps) {
+  const {
+    updateIssue: updateIssueMutation,
+    closeIssue: closeIssueMutation,
+    reopenIssue: reopenIssueMutation,
+    addComment: addCommentMutation,
+    addDependency: addDependencyMutation,
+    removeDependency: removeDependencyMutation,
+    addRelated: addRelatedMutation,
+    removeRelated: removeRelatedMutation,
+    restoreIssue: restoreIssueMutation,
+  } = useIssueMutations();
   // Create lookup map for O(1) issue access
   const issueMap = useMemo(() => new Map(allIssues.map((i) => [i.id, i])), [allIssues]);
 
@@ -87,16 +79,12 @@ export function IssueDetail({
   const [relatedDialogOpen, setRelatedDialogOpen] = useState(false);
   const [selectedRelated, setSelectedRelated] = useState('');
 
-  // Loading states
-  const [savingTitle, setSavingTitle] = useState(false);
-  const [savingDescription, setSavingDescription] = useState(false);
-  const [savingStatus, setSavingStatus] = useState(false);
-  const [savingPriority, setSavingPriority] = useState(false);
-  const [savingComment, setSavingComment] = useState(false);
-  const [savingBlocker, setSavingBlocker] = useState(false);
-  const [savingRelated, setSavingRelated] = useState(false);
-  const [closingIssue, setClosingIssue] = useState(false);
-  const [restoringIssue, setRestoringIssue] = useState(false);
+  const savingUpdate = updateIssueMutation.isPending;
+  const savingComment = addCommentMutation.isPending;
+  const savingBlocker = addDependencyMutation.isPending;
+  const savingRelated = addRelatedMutation.isPending;
+  const closingIssue = closeIssueMutation.isPending || reopenIssueMutation.isPending;
+  const restoringIssue = restoreIssueMutation.isPending;
 
   // Confirmation dialog states
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -202,18 +190,14 @@ export function IssueDetail({
       setTitleValue(issue.title);
       return;
     }
-    setSavingTitle(true);
     try {
-      await updateIssue(issue.id, {title: titleValue.trim()});
+      await updateIssueMutation.mutateAsync({id: issue.id, data: {title: titleValue.trim()}});
       setEditingTitle(false);
       toast.success('Title updated');
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to save title', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setSavingTitle(false);
     }
   };
 
@@ -222,27 +206,21 @@ export function IssueDetail({
       setEditingDescription(false);
       return;
     }
-    setSavingDescription(true);
     try {
-      await updateIssue(issue.id, {description: descriptionValue.trim() || undefined});
+      await updateIssueMutation.mutateAsync({id: issue.id, data: {description: descriptionValue.trim() || undefined}});
       setEditingDescription(false);
       toast.success('Description updated');
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to save description', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setSavingDescription(false);
     }
   };
 
   const handleStatusChange = async (newStatus: Status) => {
     if (newStatus === issue.status) return;
-    setSavingStatus(true);
     try {
-      const result = await updateIssue(issue.id, {status: newStatus});
-      // Check for cascade claim response
+      const result = await updateIssueMutation.mutateAsync({id: issue.id, data: {status: newStatus}});
       const cascaded = (result as {_cascadeClaimed?: string[]})._cascadeClaimed;
       if (cascaded && cascaded.length > 0) {
         toast.success('Status updated', {
@@ -251,124 +229,96 @@ export function IssueDetail({
       } else {
         toast.success('Status updated');
       }
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to update status', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setSavingStatus(false);
     }
   };
 
   const handlePriorityChange = async (newPriority: Priority) => {
     if (newPriority === issue.priority) return;
-    setSavingPriority(true);
     try {
-      await updateIssue(issue.id, {priority: newPriority});
+      await updateIssueMutation.mutateAsync({id: issue.id, data: {priority: newPriority}});
       toast.success('Priority updated');
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to update priority', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setSavingPriority(false);
     }
   };
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-    setSavingComment(true);
     try {
-      await addComment(issue.id, newComment.trim());
+      await addCommentMutation.mutateAsync({id: issue.id, text: newComment.trim()});
       setNewComment('');
       toast.success('Comment added');
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to add comment', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setSavingComment(false);
     }
   };
 
   const handleCloseIssue = async () => {
-    setClosingIssue(true);
     setCloseConfirmOpen(false);
     try {
-      await closeIssue(issue.id);
+      await closeIssueMutation.mutateAsync({id: issue.id});
       toast('Issue closed', {
         duration: 5000,
         action: {
           label: 'Undo',
           onClick: async () => {
             try {
-              await reopenIssue(issue.id);
+              await reopenIssueMutation.mutateAsync({id: issue.id});
               toast.success('Issue reopened');
-              onRefresh?.();
             } catch {
               toast.error('Failed to undo');
             }
           },
         },
       });
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to close issue', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setClosingIssue(false);
     }
   };
 
   const handleReopenIssue = async () => {
-    setClosingIssue(true);
     try {
-      await reopenIssue(issue.id);
+      await reopenIssueMutation.mutateAsync({id: issue.id});
       toast.success('Issue reopened');
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to reopen issue', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setClosingIssue(false);
     }
   };
 
   const handleRestoreIssue = async () => {
-    setRestoringIssue(true);
     try {
-      await restoreIssue(issue.id);
+      await restoreIssueMutation.mutateAsync({id: issue.id});
       toast.success('Issue restored');
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to restore issue', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setRestoringIssue(false);
     }
   };
 
   const handleAddBlocker = async () => {
     if (!selectedBlocker) return;
-    setSavingBlocker(true);
     try {
-      await addDependency(issue.id, selectedBlocker);
+      await addDependencyMutation.mutateAsync({id: issue.id, blockerId: selectedBlocker});
       setBlockerDialogOpen(false);
       setSelectedBlocker('');
       toast.success('Blocker added');
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to add blocker', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setSavingBlocker(false);
     }
   };
 
@@ -376,23 +326,21 @@ export function IssueDetail({
     setRemoveBlockerConfirmOpen(false);
     setBlockerToRemove(null);
     try {
-      await removeDependency(issue.id, blockerId);
+      await removeDependencyMutation.mutateAsync({id: issue.id, blockerId});
       toast('Blocker removed', {
         duration: 5000,
         action: {
           label: 'Undo',
           onClick: async () => {
             try {
-              await addDependency(issue.id, blockerId);
+              await addDependencyMutation.mutateAsync({id: issue.id, blockerId});
               toast.success('Blocker restored');
-              onRefresh?.();
             } catch {
               toast.error('Failed to undo');
             }
           },
         },
       });
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to remove blocker', {
         description: err instanceof Error ? err.message : undefined,
@@ -405,19 +353,20 @@ export function IssueDetail({
     const relatedIssue = issueMap.get(selectedRelated);
     if (!relatedIssue) return;
 
-    setSavingRelated(true);
     try {
-      await addRelated(issue.id, selectedRelated, issue.relatedTo || [], relatedIssue.relatedTo || []);
+      await addRelatedMutation.mutateAsync({
+        issueId: issue.id,
+        relatedId: selectedRelated,
+        currentRelatedTo: issue.relatedTo || [],
+        relatedIssueRelatedTo: relatedIssue.relatedTo || [],
+      });
       setRelatedDialogOpen(false);
       setSelectedRelated('');
       toast.success('Related issue added');
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to add related issue', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setSavingRelated(false);
     }
   };
 
@@ -427,32 +376,37 @@ export function IssueDetail({
     const relatedIssue = issueMap.get(relatedId);
     if (!relatedIssue) return;
 
-    // Capture current values for undo (before removal changes the arrays)
     const currentRelatedTo = [...(issue.relatedTo || [])];
     const relatedIssueRelatedTo = [...(relatedIssue.relatedTo || [])];
-    // After removal, these will be the new arrays
     const newOurRelatedTo = currentRelatedTo.filter((id) => id !== relatedId);
     const newTheirRelatedTo = relatedIssueRelatedTo.filter((id) => id !== issue.id);
 
     try {
-      await removeRelated(issue.id, relatedId, currentRelatedTo, relatedIssueRelatedTo);
+      await removeRelatedMutation.mutateAsync({
+        issueId: issue.id,
+        relatedId,
+        currentRelatedTo,
+        relatedIssueRelatedTo,
+      });
       toast('Related issue removed', {
         duration: 5000,
         action: {
           label: 'Undo',
           onClick: async () => {
             try {
-              // Restore the relationship by adding back the IDs
-              await addRelated(issue.id, relatedId, newOurRelatedTo, newTheirRelatedTo);
+              await addRelatedMutation.mutateAsync({
+                issueId: issue.id,
+                relatedId,
+                currentRelatedTo: newOurRelatedTo,
+                relatedIssueRelatedTo: newTheirRelatedTo,
+              });
               toast.success('Related issue restored');
-              onRefresh?.();
             } catch {
               toast.error('Failed to undo');
             }
           },
         },
       });
-      onRefresh?.();
     } catch (err) {
       toast.error('Failed to remove related issue', {
         description: err instanceof Error ? err.message : undefined,
@@ -498,8 +452,8 @@ export function IssueDetail({
                   }
                 }}
               />
-              <Button size="icon" variant="ghost" onClick={handleSaveTitle} disabled={savingTitle}>
-                {savingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              <Button size="icon" variant="ghost" onClick={handleSaveTitle} disabled={savingUpdate}>
+                {savingUpdate ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               </Button>
               <Button
                 size="icon"
@@ -564,7 +518,7 @@ export function IssueDetail({
             <Select
               value={issue.status}
               onChange={(e) => handleStatusChange(e.target.value as Status)}
-              disabled={savingStatus || issue.status === 'closed' || issue.deleted}
+              disabled={savingUpdate || issue.status === 'closed' || issue.deleted}
             >
               {STATUSES.filter((s) => s !== 'closed').map((s) => {
                 const blockedTitle =
@@ -589,7 +543,7 @@ export function IssueDetail({
             <Select
               value={issue.priority}
               onChange={(e) => handlePriorityChange(Number(e.target.value) as Priority)}
-              disabled={savingPriority || issue.deleted}
+              disabled={savingUpdate || issue.deleted}
             >
               {PRIORITIES.map((p) => (
                 <option key={p} value={p}>
@@ -673,8 +627,8 @@ export function IssueDetail({
                 placeholder="Enter description..."
               />
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveDescription} disabled={savingDescription}>
-                  {savingDescription ? (
+                <Button size="sm" onClick={handleSaveDescription} disabled={savingUpdate}>
+                  {savingUpdate ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   ) : (
                     <Check className="h-4 w-4 mr-1" />

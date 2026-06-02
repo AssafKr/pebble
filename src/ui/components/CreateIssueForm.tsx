@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {toast} from 'sonner';
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from './ui/dialog';
 import {Button} from './ui/button';
@@ -7,7 +7,8 @@ import {Label} from './ui/label';
 import {Select} from './ui/select';
 import {Textarea} from './ui/textarea';
 import {HierarchicalSelect} from './ui/hierarchical-select';
-import {createIssue, fetchSources, type SourcesResponse} from '../lib/api';
+import {useIssueMutations} from '../hooks/useIssueMutations';
+import {useSources} from '../hooks/useSources';
 import type {Issue, IssueType, Priority} from '../../shared/types';
 import {ISSUE_TYPES, PRIORITIES, TYPE_LABELS, PRIORITY_DISPLAY_LABELS} from '../../shared/types';
 import {Loader2, FolderSync} from 'lucide-react';
@@ -15,31 +16,20 @@ import {Loader2, FolderSync} from 'lucide-react';
 interface CreateIssueFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreated: () => void;
   epics: Issue[];
 }
 
-export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIssueFormProps) {
+export function CreateIssueForm({open, onOpenChange, epics}: CreateIssueFormProps) {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<IssueType>('task');
   const [priority, setPriority] = useState<Priority>(2);
   const [description, setDescription] = useState('');
   const [parent, setParent] = useState<string>('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Multi-worktree source selection
-  const [sources, setSources] = useState<SourcesResponse | null>(null);
   const [targetSource, setTargetSource] = useState<number>(0);
 
-  // Fetch available sources when dialog opens
-  useEffect(() => {
-    if (open) {
-      fetchSources()
-        .then(setSources)
-        .catch(() => setSources(null));
-    }
-  }, [open]);
+  const {data: sources} = useSources(open);
+  const {createIssue} = useIssueMutations();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,24 +38,21 @@ export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIs
       return;
     }
 
-    setLoading(true);
     setError(null);
 
     try {
-      // Pass target source index in multi-worktree mode
       const targetIndex = sources?.isMultiWorktree ? targetSource : undefined;
-      await createIssue(
-        {
+      await createIssue.mutateAsync({
+        data: {
           title: title.trim(),
           type,
           priority,
           description: description.trim() || undefined,
           parent: parent || undefined,
         },
-        targetIndex
-      );
+        targetSourceIndex: targetIndex,
+      });
 
-      // Reset form
       setTitle('');
       setType('task');
       setPriority(2);
@@ -74,25 +61,22 @@ export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIs
       setTargetSource(0);
 
       toast.success('Issue created');
-      onCreated();
       onOpenChange(false);
     } catch (err) {
       toast.error('Failed to create issue', {
         description: err instanceof Error ? err.message : undefined,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleClose = () => {
-    if (!loading) {
+    if (!createIssue.isPending) {
       onOpenChange(false);
     }
   };
 
-  // Filter epics that are not closed
   const availableEpics = epics.filter((e) => e.status !== 'closed');
+  const loading = createIssue.isPending;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -104,7 +88,6 @@ export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIs
           </DialogHeader>
 
           <div className="grid gap-4 py-4 px-6">
-            {/* Title */}
             <div className="grid gap-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -117,7 +100,6 @@ export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIs
               />
             </div>
 
-            {/* Type and Priority row */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="type">Type</Label>
@@ -152,7 +134,6 @@ export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIs
               </div>
             </div>
 
-            {/* Parent (only for non-epics) */}
             {type !== 'epic' && availableEpics.length > 0 && (
               <div className="grid gap-2">
                 <Label>Parent Epic</Label>
@@ -166,7 +147,6 @@ export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIs
               </div>
             )}
 
-            {/* Description */}
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -179,7 +159,6 @@ export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIs
               />
             </div>
 
-            {/* Target File (multi-worktree mode only) */}
             {sources?.isMultiWorktree && sources.files.length > 1 && (
               <div className="grid gap-2">
                 <Label htmlFor="targetSource" className="flex items-center gap-1.5">
@@ -202,7 +181,6 @@ export function CreateIssueForm({open, onOpenChange, onCreated, epics}: CreateIs
               </div>
             )}
 
-            {/* Error message */}
             {error && <div className="text-sm text-destructive">{error}</div>}
           </div>
 

@@ -3,30 +3,29 @@ import {toast} from 'sonner';
 import {X, CheckCircle, ArrowRight} from 'lucide-react';
 import {Button} from './ui/button';
 import {Select} from './ui/select';
-import {bulkCloseIssues, bulkUpdateIssues} from '../lib/api';
+import {useIssueMutations} from '../hooks/useIssueMutations';
 import type {Status, Priority} from '../../shared/types';
 import {STATUS_LABELS, PRIORITY_DISPLAY_LABELS} from '../../shared/types';
 
 interface BulkActionBarProps {
   selectedIds: Set<string>;
   onClearSelection: () => void;
-  onRefresh: () => void;
 }
 
-export function BulkActionBar({selectedIds, onClearSelection, onRefresh}: BulkActionBarProps) {
-  const [loading, setLoading] = useState(false);
+export function BulkActionBar({selectedIds, onClearSelection}: BulkActionBarProps) {
   const [statusValue, setStatusValue] = useState<Status | ''>('');
   const [priorityValue, setPriorityValue] = useState<Priority | ''>('');
+  const {bulkClose, bulkUpdate} = useIssueMutations();
 
+  const loading = bulkClose.isPending || bulkUpdate.isPending;
   const count = selectedIds.size;
   const ids = Array.from(selectedIds);
 
   if (count === 0) return null;
 
   const handleCloseAll = async () => {
-    setLoading(true);
     try {
-      const result = await bulkCloseIssues(ids);
+      const result = await bulkClose.mutateAsync(ids);
       const succeeded = result.results.filter((r) => r.success).length;
       const failed = result.results.filter((r) => !r.success);
 
@@ -38,21 +37,17 @@ export function BulkActionBar({selectedIds, onClearSelection, onRefresh}: BulkAc
         });
       }
       onClearSelection();
-      onRefresh();
     } catch (err) {
       toast.error('Failed to close issues', {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleSetStatus = async () => {
     if (!statusValue) return;
-    setLoading(true);
     try {
-      const result = await bulkUpdateIssues(ids, {status: statusValue});
+      const result = await bulkUpdate.mutateAsync({ids, updates: {status: statusValue}});
       const succeeded = result.results.filter((r) => r.success).length;
       const failed = result.results.filter((r) => !r.success);
 
@@ -65,21 +60,17 @@ export function BulkActionBar({selectedIds, onClearSelection, onRefresh}: BulkAc
       }
       setStatusValue('');
       onClearSelection();
-      onRefresh();
     } catch (err) {
       toast.error('Failed to update status', {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleSetPriority = async () => {
     if (priorityValue === '') return;
-    setLoading(true);
     try {
-      const result = await bulkUpdateIssues(ids, {priority: priorityValue});
+      const result = await bulkUpdate.mutateAsync({ids, updates: {priority: priorityValue}});
       const succeeded = result.results.filter((r) => r.success).length;
       const failed = result.results.filter((r) => !r.success);
 
@@ -94,19 +85,15 @@ export function BulkActionBar({selectedIds, onClearSelection, onRefresh}: BulkAc
       }
       setPriorityValue('');
       onClearSelection();
-      onRefresh();
     } catch (err) {
       toast.error('Failed to update priority', {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <div className="flex items-center gap-4 p-3 mb-4 bg-muted/50 border rounded-lg">
-      {/* Selection count */}
       <div className="flex items-center gap-2">
         <span className="font-medium text-sm">{count} selected</span>
         <Button variant="ghost" size="sm" onClick={onClearSelection} className="h-6 w-6 p-0" title="Clear selection">
@@ -116,15 +103,13 @@ export function BulkActionBar({selectedIds, onClearSelection, onRefresh}: BulkAc
 
       <div className="h-6 w-px bg-border" />
 
-      {/* Close All */}
-      <Button variant="outline" size="sm" onClick={handleCloseAll} disabled={loading}>
+      <Button variant="outline" size="sm" onClick={() => void handleCloseAll()} disabled={loading}>
         <CheckCircle className="h-4 w-4 mr-1" />
         Close All
       </Button>
 
       <div className="h-6 w-px bg-border" />
 
-      {/* Set Status */}
       <div className="flex items-center gap-2">
         <Select
           value={statusValue}
@@ -138,13 +123,12 @@ export function BulkActionBar({selectedIds, onClearSelection, onRefresh}: BulkAc
           <option value="blocked">Blocked</option>
         </Select>
         {statusValue && (
-          <Button variant="outline" size="sm" onClick={handleSetStatus} disabled={loading} className="h-8">
+          <Button variant="outline" size="sm" onClick={() => void handleSetStatus()} disabled={loading} className="h-8">
             <ArrowRight className="h-4 w-4" />
           </Button>
         )}
       </div>
 
-      {/* Set Priority */}
       <div className="flex items-center gap-2">
         <Select
           value={priorityValue === '' ? '' : String(priorityValue)}
@@ -160,7 +144,13 @@ export function BulkActionBar({selectedIds, onClearSelection, onRefresh}: BulkAc
           <option value="4">Backlog</option>
         </Select>
         {priorityValue !== '' && (
-          <Button variant="outline" size="sm" onClick={handleSetPriority} disabled={loading} className="h-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void handleSetPriority()}
+            disabled={loading}
+            className="h-8"
+          >
             <ArrowRight className="h-4 w-4" />
           </Button>
         )}

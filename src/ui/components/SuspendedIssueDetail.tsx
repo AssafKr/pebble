@@ -8,18 +8,11 @@ interface SuspendedIssueDetailProps {
   issueId: string;
   onClose: () => void;
   onSelectIssue: (issue: Issue) => void;
-  onRefresh?: () => void;
   commentInputRef?: RefObject<HTMLTextAreaElement>;
 }
 
-export function SuspendedIssueDetail({
-  issueId,
-  onClose,
-  onSelectIssue,
-  onRefresh,
-  commentInputRef,
-}: SuspendedIssueDetailProps) {
-  const {issues, events, refresh} = useSuspenseIssues();
+export function SuspendedIssueDetail({issueId, onClose, onSelectIssue, commentInputRef}: SuspendedIssueDetailProps) {
+  const {issues, events} = useSuspenseIssues();
   const issue = issues.find((candidate) => candidate.id === issueId);
 
   if (!issue) {
@@ -33,7 +26,6 @@ export function SuspendedIssueDetail({
       events={events}
       onClose={onClose}
       onSelectIssue={onSelectIssue}
-      onRefresh={onRefresh ?? (() => void refresh())}
       commentInputRef={commentInputRef}
     />
   );
