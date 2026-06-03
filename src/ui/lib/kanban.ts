@@ -1,6 +1,6 @@
 import type {Issue} from '../../shared/types';
 import type {KanbanColumnId} from './issueRowStyles';
-import {sortKanbanCards} from './sort';
+import {sortKanbanCards, sortKanbanClosedCards} from './sort';
 
 export const RECENTLY_CLOSED_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -52,7 +52,7 @@ export function partitionKanbanColumns(issues: Issue[]): KanbanColumns {
 
   columns.open = sortKanbanCards(columns.open);
   columns.in_progress = sortKanbanCards(columns.in_progress);
-  columns.closed = sortKanbanCards(columns.closed);
+  columns.closed = sortKanbanClosedCards(columns.closed);
 
   return columns;
 }

@@ -80,3 +80,12 @@ export function sortByStatus(issues: Issue[]): Issue[] {
 export function sortKanbanCards(issues: Issue[]): Issue[] {
   return [...issues].sort((a, b) => a.priority - b.priority || a.title.localeCompare(b.title));
 }
+
+/** Sorts recently-closed kanban cards by closed date, newest first. */
+export function sortKanbanClosedCards(issues: Issue[]): Issue[] {
+  return [...issues].sort((a, b) => {
+    const closedA = new Date(a.statusChangedAt ?? a.updatedAt).getTime();
+    const closedB = new Date(b.statusChangedAt ?? b.updatedAt).getTime();
+    return closedB - closedA;
+  });
+}
