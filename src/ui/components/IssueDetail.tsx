@@ -99,7 +99,7 @@ export function IssueDetail({issue, allIssues, events, onClose, onSelectIssue, c
 
   // Get child IDs for activity filtering
   const childIds = useMemo(() => {
-    return allIssues.filter((i) => i.parent === issue.id).map((i) => i.id);
+    return allIssues.filter((i) => i.parent === issue.id && !i.deleted).map((i) => i.id);
   }, [allIssues, issue.id]);
 
   // Reset values when issue changes
@@ -151,7 +151,7 @@ export function IssueDetail({issue, allIssues, events, onClose, onSelectIssue, c
 
   // Children: sorted by status (open/in_progress first, closed at bottom)
   const childIssues = useMemo(() => {
-    const children = allIssues.filter((i) => i.parent === issue.id);
+    const children = allIssues.filter((i) => i.parent === issue.id && !i.deleted);
     return sortByStatus(children);
   }, [allIssues, issue.id]);
 
